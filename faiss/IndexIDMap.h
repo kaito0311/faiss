@@ -49,6 +49,7 @@ struct IndexIDMapTemplate : IndexT {
             idx_t k,
             const distance_t lower,
             const distance_t upper,
+            const distance_t duplicate_thr,
             const bool rm_duplicate,
             distance_t* distances,
             idx_t* labels,

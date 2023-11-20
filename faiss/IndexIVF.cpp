@@ -713,6 +713,7 @@ void IndexIVF::boundary_search(
         idx_t k,
         const float lower,
         const float upper,
+        const float duplicate_thr,
         const bool rm_duplicate,
         float* distances,
         idx_t* labels,
@@ -733,6 +734,7 @@ void IndexIVF::boundary_search(
                                    const float* x,
                                    const float lower,
                                    const float upper,
+                                   const float duplicate_thr,
                                    const bool rm_duplicate,
                                    float* distances,
                                    idx_t* labels,
@@ -758,6 +760,7 @@ void IndexIVF::boundary_search(
                 k,
                 lower,
                 upper,
+                duplicate_thr,
                 rm_duplicate,
                 idx.get(),
                 coarse_dis.get(),
@@ -789,6 +792,7 @@ void IndexIVF::boundary_search(
                             x + i0 * d,
                             lower,
                             upper,
+                            duplicate_thr,
                             rm_duplicate,
                             distances + i0 * k,
                             labels + i0 * k,
@@ -811,7 +815,7 @@ void IndexIVF::boundary_search(
     } else {
         // handle parallelization at level below (or don't run in parallel at
         // all)
-        sub_search_func(n, x, lower, upper, rm_duplicate, distances, labels, &indexIVF_stats);
+        sub_search_func(n, x, lower, upper, duplicate_thr, rm_duplicate, distances, labels, &indexIVF_stats);
     }
 }
 
@@ -821,6 +825,7 @@ void IndexIVF::boundary_search_preassigned(
         idx_t k,
         const float lower,
         const float upper,
+        const float duplicate_thr,
         const bool rm_duplicate,
         const idx_t* keys,
         const float* coarse_dis,
@@ -962,7 +967,7 @@ void IndexIVF::boundary_search_preassigned(
                             invlists->get_iterator(key));
 
                     nheap += scanner->iterate_codes_boundary(
-                            it.get(), lower, upper, rm_duplicate, simi, idxi, k, list_size);
+                            it.get(), lower, upper, duplicate_thr, rm_duplicate, simi, idxi, k, list_size);
 
                     return list_size;
                 } else {
@@ -997,7 +1002,7 @@ void IndexIVF::boundary_search_preassigned(
                     }
 
                     nheap += scanner->scan_codes_boundary(
-                            list_size, lower, upper, rm_duplicate, codes, ids, simi, idxi, k);
+                            list_size, lower, upper, duplicate_thr, rm_duplicate, codes, ids, simi, idxi, k);
 
                     return list_size;
                 }
@@ -1722,6 +1727,7 @@ size_t InvertedListScanner::scan_codes_boundary(
         size_t list_size,
         const float lower,
         const float upper,
+        const float duplicate_thr,
         const bool rm_duplicate,
         const uint8_t* codes,
         const idx_t* ids,
@@ -1737,14 +1743,24 @@ size_t InvertedListScanner::scan_codes_boundary(
             if (dis < lower){
                 keep = false;
             };
-
             if (dis > upper){
                 keep = false;
             };
             if (dis < simi[0] && keep) {
-                int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                maxheap_replace_top(k, simi, idxi, dis, id);
-                nup++;
+                // Add check duplicate
+                if (rm_duplicate){
+                    for (size_t ii = 0; ii < k; ii++){
+                        if (fabs(dis - simi[ii]) < duplicate_thr){
+                            keep = false;
+                            break;
+                        }
+                    }
+                };
+                if (keep){
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    maxheap_replace_top(k, simi, idxi, dis, id);
+                    nup++;
+                };
             }
             codes += code_size;
         }
@@ -1759,9 +1775,20 @@ size_t InvertedListScanner::scan_codes_boundary(
                 keep = false;
             };
             if (dis > simi[0] && keep) {
-                int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                minheap_replace_top(k, simi, idxi, dis, id);
-                nup++;
+                // Add check duplicate
+                if (rm_duplicate){
+                    for (size_t ii = 0; ii < k; ii++){
+                        if (fabs(dis - simi[ii]) < 1e-5){
+                            keep = false;
+                            break;
+                        }
+                    }
+                };
+                if (keep){
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    minheap_replace_top(k, simi, idxi, dis, id);
+                    nup++;
+                };
             }
             codes += code_size;
         }
@@ -1773,6 +1800,7 @@ size_t InvertedListScanner::iterate_codes_boundary(
         InvertedListsIterator* it,
         const float lower,
         const float upper,
+        const float duplicate_thr,
         const bool rm_duplicate,
         float* simi,
         idx_t* idxi,
@@ -1793,8 +1821,19 @@ size_t InvertedListScanner::iterate_codes_boundary(
                 keep = false;
             };
             if (dis < simi[0] && keep) {
-                maxheap_replace_top(k, simi, idxi, dis, id_and_codes.first);
-                nup++;
+                // Add check duplicate
+                if (rm_duplicate){
+                    for (size_t ii = 0; ii < k; ii++){
+                        if (fabs(dis - simi[ii]) < duplicate_thr){
+                            keep = false;
+                            break;
+                        }
+                    }
+                };
+                if (keep){
+                    maxheap_replace_top(k, simi, idxi, dis, id_and_codes.first);
+                    nup++;
+                };
             }
             list_size++;
         }
@@ -1810,8 +1849,19 @@ size_t InvertedListScanner::iterate_codes_boundary(
                 keep = false;
             };
             if (dis > simi[0] && keep) {
-                minheap_replace_top(k, simi, idxi, dis, id_and_codes.first);
-                nup++;
+                // Add check duplicate
+                if (rm_duplicate){
+                    for (size_t ii = 0; ii < k; ii++){
+                        if (fabs(dis - simi[ii]) < 1e-5){
+                            keep = false;
+                            break;
+                        }
+                    }
+                };
+                if (keep){
+                    minheap_replace_top(k, simi, idxi, dis, id_and_codes.first);
+                    nup++;
+                };
             }
             list_size++;
         }

@@ -343,7 +343,7 @@ def handle_Index(the_class):
         self.search_c(n, swig_ptr(x), k, swig_ptr(D), swig_ptr(I), params)
         return D, I
 
-    def replacement_boundary_search(self, x, k, lower, upper, *, params=None, D=None, I=None, rm_duplicate = False):
+    def replacement_boundary_search(self, x, k, lower, upper, *, params=None, D=None, I=None, rm_duplicate = False, duplicate_thr = 1e-6):
         """Find the k nearest neighbors of the set of vectors x in the index.
 
         Parameters
@@ -378,6 +378,9 @@ def handle_Index(the_class):
 
         assert k > 0
 
+        if rm_duplicate:
+            assert duplicate_thr > 0
+
         if D is None:
             D = np.empty((n, k), dtype=np.float32)
         else:
@@ -388,7 +391,7 @@ def handle_Index(the_class):
         else:
             assert I.shape == (n, k)
 
-        self.boundary_search_c(n, swig_ptr(x), k, lower, upper, rm_duplicate, swig_ptr(D), swig_ptr(I), params)
+        self.boundary_search_c(n, swig_ptr(x), k, lower, upper, duplicate_thr, rm_duplicate, swig_ptr(D), swig_ptr(I), params)
         return D, I
 
     def replacement_search_and_reconstruct(self, x, k, *, params=None, D=None, I=None, R=None):
@@ -667,7 +670,7 @@ def handle_Index(the_class):
         )
         return D, I
 
-    def replacement_boundary_search_preassigned(self, x, k, lower, upper, Iq, Dq, *, params=None, D=None, I=None, rm_duplicate = False):
+    def replacement_boundary_search_preassigned(self, x, k, lower, upper, Iq, Dq, *, params=None, D=None, I=None, rm_duplicate = False, duplicate_thr = 1e-6):
         """Find the k nearest neighbors of the set of vectors x in an IVF index,
         with precalculated coarse quantization assignment.
 
@@ -706,7 +709,8 @@ def handle_Index(the_class):
         x = np.ascontiguousarray(x, dtype='float32')
         assert d == self.d
         assert k > 0
-
+        if rm_duplicate:
+            assert duplicate_thr > 0
         if D is None:
             D = np.empty((n, k), dtype=np.float32)
         else:
@@ -730,6 +734,7 @@ def handle_Index(the_class):
             k,
             lower,
             upper,
+            duplicate_thr,
             rm_duplicate,
             swig_ptr(Iq), swig_ptr(Dq),
             swig_ptr(D), swig_ptr(I),
@@ -931,15 +936,17 @@ def handle_IndexBinary(the_class):
                       swig_ptr(labels))
         return distances, labels
 
-    def replacement_boundary_search(self, x, k, lower, upper, rm_duplicate):
+    def replacement_boundary_search(self, x, k, lower, upper, duplicate_thr, rm_duplicate):
         x = _check_dtype_uint8(x)
         n, d = x.shape
         assert d == self.code_size
         assert k > 0
+        if rm_duplicate:
+            assert duplicate_thr > 0
         distances = np.empty((n, k), dtype=np.int32)
         labels = np.empty((n, k), dtype=np.int64)
         self.boundary_search_c(n, swig_ptr(x),
-                      k, lower, upper, rm_duplicate, swig_ptr(distances),
+                      k, lower, upper, duplicate_thr, rm_duplicate, swig_ptr(distances),
                       swig_ptr(labels))
         return distances, labels
 
@@ -968,11 +975,13 @@ def handle_IndexBinary(the_class):
         )
         return D, I
 
-    def replacement_boundary_search_preassigned(self, x, k, lower, upper, rm_duplicate, Iq, Dq):
+    def replacement_boundary_search_preassigned(self, x, k, lower, upper, duplicate_thr, rm_duplicate, Iq, Dq):
         n, d = x.shape
         x = _check_dtype_uint8(x)
         assert d == self.code_size
         assert k > 0
+        if rm_duplicate:
+            assert duplicate_thr > 0
 
         D = np.empty((n, k), dtype=np.int32)
         I = np.empty((n, k), dtype=np.int64)
@@ -989,6 +998,7 @@ def handle_IndexBinary(the_class):
             k,
             lower,
             upper,
+            duplicate_thr,
             rm_duplicate,
             swig_ptr(Iq), swig_ptr(Dq),
             swig_ptr(D), swig_ptr(I),

@@ -144,6 +144,8 @@ void exhaustive_inner_product_seq_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -229,6 +231,8 @@ void exhaustive_L2sqr_seq_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -328,6 +332,8 @@ void exhaustive_inner_product_blas_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -371,7 +377,7 @@ void exhaustive_inner_product_blas_boundary(
                        &nyi);
             }
             
-            res.add_results_boundary(j0, j1, ip_block.get(), lower, upper);
+            res.add_results_boundary(j0, j1, ip_block.get(), lower, upper, duplicate_thr, rm_duplicate);
         }
         res.end_multiple();
         InterruptCallback::check();
@@ -469,6 +475,8 @@ void exhaustive_L2sqr_blas_default_impl_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -541,7 +549,7 @@ void exhaustive_L2sqr_blas_default_impl_boundary(
                     ip_line++;
                 }
             }
-            res.add_results_boundary(j0, j1, ip_block.get(), lower, upper);
+            res.add_results_boundary(j0, j1, ip_block.get(), lower, upper, duplicate_thr, rm_duplicate);
         }
         res.end_multiple();
         InterruptCallback::check();
@@ -566,12 +574,14 @@ void exhaustive_L2sqr_blas_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
         ResultHandler& res,
         const float* y_norms = nullptr) {
-    exhaustive_L2sqr_blas_default_impl_boundary(x, y, lower, upper, d, nx, ny, res);
+    exhaustive_L2sqr_blas_default_impl_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res);
 }
 
 #ifdef __AVX2__
@@ -827,6 +837,8 @@ void exhaustive_L2sqr_blas_boundary<SingleBestResultHandler<CMax<float, int64_t>
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -886,6 +898,8 @@ void knn_L2sqr_select_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -893,11 +907,11 @@ void knn_L2sqr_select_boundary(
         const float* y_norm2,
         const IDSelector* sel) {
     if (sel) {
-        exhaustive_L2sqr_seq_boundary<ResultHandler, true>(x, y, lower, upper, d, nx, ny, res, sel);
+        exhaustive_L2sqr_seq_boundary<ResultHandler, true>(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, sel);
     } else if (nx < distance_compute_blas_threshold) {
-        exhaustive_L2sqr_seq_boundary(x, y, lower, upper, d, nx, ny, res);
+        exhaustive_L2sqr_seq_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res);
     } else {
-        exhaustive_L2sqr_blas_boundary(x, y, lower, upper, d, nx, ny, res, y_norm2);
+        exhaustive_L2sqr_blas_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, y_norm2);
     }
 }
 
@@ -982,6 +996,8 @@ void knn_inner_product_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -999,28 +1015,28 @@ void knn_inner_product_boundary(
     }
     if (auto sela = dynamic_cast<const IDSelectorArray*>(sel)) {
         knn_inner_products_by_idx_boundary(
-                x, y, lower, upper, sela->ids, d, nx, sela->n, k, val, ids, 0);
+                x, y, lower, upper, duplicate_thr, rm_duplicate, sela->ids, d, nx, sela->n, k, val, ids, 0);
         return;
     }
     if (k < distance_compute_min_k_reservoir) {
         using RH = HeapResultHandler<CMin<float, int64_t>>;
         RH res(nx, val, ids, k);
         if (sel) {
-            exhaustive_inner_product_seq_boundary<RH, true>(x, y, lower, upper, d, nx, ny, res, sel);
+            exhaustive_inner_product_seq_boundary<RH, true>(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, sel);
         } else if (nx < distance_compute_blas_threshold) {
-            exhaustive_inner_product_seq_boundary(x, y, lower, upper, d, nx, ny, res);
+            exhaustive_inner_product_seq_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res);
         } else {
-            exhaustive_inner_product_blas_boundary(x, y, lower, upper, d, nx, ny, res);
+            exhaustive_inner_product_blas_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res);
         }
     } else {
         using RH = ReservoirResultHandler<CMin<float, int64_t>>;
         RH res(nx, val, ids, k);
         if (sel) {
-            exhaustive_inner_product_seq_boundary<RH, true>(x, y, lower, upper, d, nx, ny, res, sel);
+            exhaustive_inner_product_seq_boundary<RH, true>(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, sel);
         } else if (nx < distance_compute_blas_threshold) {
-            exhaustive_inner_product_seq_boundary(x, y, lower, upper, d, nx, ny, res, nullptr);
+            exhaustive_inner_product_seq_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, nullptr);
         } else {
-            exhaustive_inner_product_blas_boundary(x, y, lower, upper, d, nx, ny, res);
+            exhaustive_inner_product_blas_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res);
         }
     }
     if (imin != 0) {
@@ -1037,13 +1053,15 @@ void knn_inner_product_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
         float_minheap_array_t* res,
         const IDSelector* sel) {
     FAISS_THROW_IF_NOT(nx == res->nh);
-    knn_inner_product_boundary(x, y, lower, upper, d, nx, ny, res->k, res->val, res->ids, sel);
+    knn_inner_product_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res->k, res->val, res->ids, sel);
 }
 
 void knn_L2sqr(
@@ -1106,6 +1124,8 @@ void knn_L2sqr_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -1123,18 +1143,18 @@ void knn_L2sqr_boundary(
         sel = nullptr;
     }
     if (auto sela = dynamic_cast<const IDSelectorArray*>(sel)) {
-        knn_L2sqr_by_idx_boundary(x, y, lower, upper, sela->ids, d, nx, sela->n, k, vals, ids, 0);
+        knn_L2sqr_by_idx_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, sela->ids, d, nx, sela->n, k, vals, ids, 0);
         return;
     }
     if (k == 1) {
         SingleBestResultHandler<CMax<float, int64_t>> res(nx, vals, ids);
-        knn_L2sqr_select_boundary(x, y, lower, upper, d, nx, ny, res, y_norm2, sel);
+        knn_L2sqr_select_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, y_norm2, sel);
     } else if (k < distance_compute_min_k_reservoir) {
         HeapResultHandler<CMax<float, int64_t>> res(nx, vals, ids, k);
-        knn_L2sqr_select_boundary(x, y, lower, upper, d, nx, ny, res, y_norm2, sel);
+        knn_L2sqr_select_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, y_norm2, sel);
     } else {
         ReservoirResultHandler<CMax<float, int64_t>> res(nx, vals, ids, k);
-        knn_L2sqr_select_boundary(x, y, lower, upper, d, nx, ny, res, y_norm2, sel);
+        knn_L2sqr_select_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res, y_norm2, sel);
     }
     if (imin != 0) {
         for (size_t i = 0; i < nx * k; i++) {
@@ -1150,6 +1170,8 @@ void knn_L2sqr_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         size_t d,
         size_t nx,
         size_t ny,
@@ -1157,7 +1179,7 @@ void knn_L2sqr_boundary(
         const float* y_norm2,
         const IDSelector* sel) {
     FAISS_THROW_IF_NOT(res->nh == nx);
-    knn_L2sqr_boundary(x, y, lower, upper, d, nx, ny, res->k, res->val, res->ids, y_norm2, sel);
+    knn_L2sqr_boundary(x, y, lower, upper, duplicate_thr, rm_duplicate, d, nx, ny, res->k, res->val, res->ids, y_norm2, sel);
 }
 
 /***************************************************************************
@@ -1338,6 +1360,8 @@ void knn_inner_products_by_idx_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         const int64_t* ids,
         size_t d,
         size_t nx,
@@ -1419,6 +1443,8 @@ void knn_L2sqr_by_idx_boundary(
         const float* y,
         const float lower,
         const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
         const int64_t* __restrict ids,
         size_t d,
         size_t nx,

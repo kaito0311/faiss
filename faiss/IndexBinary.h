@@ -94,6 +94,7 @@ struct IndexBinary {
             idx_t k,
             const int32_t lower,
             const int32_t upper,
+            const int32_t duplicate_thr,
             const bool rm_duplicate,
             int32_t* distances,
             idx_t* labels,

@@ -109,7 +109,7 @@ struct HeapResultHandler {
     }
 
     /// add results boundary for query i0..i1 and j0..j1
-    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper) {
+    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
     #pragma omp parallel for
         for (int64_t i = i0; i < i1; i++) {
             T* heap_dis = heap_dis_tab + i * k;
@@ -270,7 +270,7 @@ struct ReservoirResultHandler {
             res1.add(dis, idx);
         }
         /// add one result for query i
-        void add_result_boundary(T dis, TI idx, T lower, T upper) {
+        void add_result_boundary(T dis, TI idx, T lower, T upper, T duplicate_thr, bool rm_duplicate) {
             bool keep = true;
             if (dis < lower){
                 keep = false;
@@ -332,7 +332,7 @@ struct ReservoirResultHandler {
     }
 
     /// add results for query i0..i1 and j0..j1
-    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper) {
+    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
         // maybe parallel for
 #pragma omp parallel for
         for (int64_t i = i0; i < i1; i++) {
@@ -465,7 +465,7 @@ struct RangeSearchResultHandler {
     }
 
     /// add results for query i0..i1 and j0..j1
-    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper) {
+    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
         RangeSearchPartialResult* pres;
         // there is one RangeSearchPartialResult structure per j0
         // (= block of columns of the large distance matrix)
@@ -560,7 +560,7 @@ struct SingleBestResultHandler {
         }
 
         /// add one result for query i with boundary check
-        void add_result_boundary(T dis, TI idx, const T lower, const T upper) {
+        void add_result_boundary(T dis, TI idx, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
             bool keep = true;
             if (dis < lower){
                 keep = false;
@@ -612,7 +612,7 @@ struct SingleBestResultHandler {
         }
     }
 
-    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper) {
+    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
         for (int64_t i = i0; i < i1; i++) {
             const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
 
@@ -646,7 +646,7 @@ struct SingleBestResultHandler {
         }
     }
 
-    void add_result_boundary(const size_t i, const T dis, const TI idx, const T lower, const T upper) {
+    void add_result_boundary(const size_t i, const T dis, const TI idx, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
         auto& min_distance = this->dis_tab[i];
         auto& min_index = this->ids_tab[i];
         bool keep = true;

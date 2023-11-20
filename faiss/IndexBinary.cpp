@@ -41,6 +41,7 @@ void IndexBinary::boundary_search(
         idx_t,
         const int32_t,
         const int32_t,
+        const int32_t,
         const bool,
         int32_t*,
         idx_t*,

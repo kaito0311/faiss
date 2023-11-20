@@ -59,6 +59,7 @@ void IndexFlat::boundary_search(
         idx_t k,
         const float lower,
         const float upper,
+        const float duplicate_thr,
         const bool rm_duplicate,
         float* distances,
         idx_t* labels,
@@ -69,10 +70,10 @@ void IndexFlat::boundary_search(
     // we see the distances and labels as heaps
     if (metric_type == METRIC_INNER_PRODUCT) {
         float_minheap_array_t res = {size_t(n), size_t(k), labels, distances};
-        knn_inner_product_boundary(x, get_xb(), lower, upper, d, n, ntotal, &res, sel);
+        knn_inner_product_boundary(x, get_xb(), lower, upper, duplicate_thr, rm_duplicate, d, n, ntotal, &res, sel);
     } else if (metric_type == METRIC_L2) {
         float_maxheap_array_t res = {size_t(n), size_t(k), labels, distances};
-        knn_L2sqr_boundary(x, get_xb(), lower, upper, d, n, ntotal, &res, nullptr, sel);
+        knn_L2sqr_boundary(x, get_xb(), lower, upper, duplicate_thr, rm_duplicate, d, n, ntotal, &res, nullptr, sel);
     } else if (is_similarity_metric(metric_type)) {
         FAISS_THROW_MSG("metric type not supported");
     } else {

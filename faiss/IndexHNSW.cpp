@@ -354,6 +354,7 @@ void IndexHNSW::boundary_search(
         idx_t k,
         const float lower,
         const float upper,
+        const float duplicate_thr,
         const bool rm_duplicate,
         float* distances,
         idx_t* labels,
@@ -392,7 +393,7 @@ void IndexHNSW::boundary_search(
                 dis->set_query(x + i * d);
 
                 maxheap_heapify(k, simi, idxi);
-                HNSWStats stats = hnsw.boundary_search(*dis, k, lower, upper, rm_duplicate, idxi, simi, vt, params);
+                HNSWStats stats = hnsw.boundary_search(*dis, k, lower, upper, duplicate_thr, rm_duplicate, idxi, simi, vt, params);
                 // HNSWStats stats = hnsw.search(*dis, k, idxi, simi, vt, params);
                 n1 += stats.n1;
                 n2 += stats.n2;
