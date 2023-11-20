@@ -426,7 +426,8 @@ void greedy_update_nearest_boundary(
         storage_idx_t& nearest,
         float& d_nearest,
         const float lower,
-        const float upper) {
+        const float upper,
+        const bool rm_duplicate) {
     for (;;) {
         storage_idx_t prev_nearest = nearest;
 
@@ -713,6 +714,7 @@ int search_from_candidates_boundary(
         int k,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         idx_t* I,
         float* D,
         MinimaxHeap& candidates,
@@ -1016,7 +1018,8 @@ std::priority_queue<HNSW::Node> search_from_candidate_unbounded_boundary(
         VisitedTable* vt,
         HNSWStats& stats,
         const float lower,
-        const float upper) {
+        const float upper,
+        const bool rm_duplicate) {
     int ndis = 0;
     std::priority_queue<Node> top_candidates;
     std::priority_queue<Node, std::vector<Node>, std::greater<Node>> candidates;
@@ -1250,6 +1253,7 @@ HNSWStats HNSW::boundary_search(
         int k,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         idx_t* I,
         float* D,
         VisitedTable& vt,
@@ -1264,7 +1268,7 @@ HNSWStats HNSW::boundary_search(
         float d_nearest = qdis(nearest);
 
         for (int level = max_level; level >= 1; level--) {
-            greedy_update_nearest_boundary(*this, qdis, level, nearest, d_nearest, lower, upper);
+            greedy_update_nearest_boundary(*this, qdis, level, nearest, d_nearest, lower, upper, rm_duplicate);
         }
 
         int ef = std::max(efSearch, k);
@@ -1274,7 +1278,7 @@ HNSWStats HNSW::boundary_search(
             candidates.push(nearest, d_nearest);
 
             search_from_candidates_boundary(
-                    *this, qdis, k, lower, upper, I, D, candidates, vt, stats, 0, 0, params);
+                    *this, qdis, k, lower, upper, rm_duplicate, I, D, candidates, vt, stats, 0, 0, params);
         } else {
             std::priority_queue<Node> top_candidates =
                     search_from_candidate_unbounded_boundary(
@@ -1285,7 +1289,8 @@ HNSWStats HNSW::boundary_search(
                             &vt,
                             stats,
                             lower,
-                            upper);
+                            upper,
+                            rm_duplicate);
 
             while (top_candidates.size() > k) {
                 top_candidates.pop();
@@ -1325,7 +1330,7 @@ HNSWStats HNSW::boundary_search(
 
             if (level == 0) {
                 nres = search_from_candidates_boundary(
-                        *this, qdis, k, lower, upper, I, D, candidates, vt, stats, 0);
+                        *this, qdis, k, lower, upper, rm_duplicate, I, D, candidates, vt, stats, 0);
             } else {
                 nres = search_from_candidates_boundary(
                         *this,
@@ -1333,6 +1338,7 @@ HNSWStats HNSW::boundary_search(
                         candidates_size,
                         lower,
                         upper,
+                        rm_duplicate,
                         I_to_next.data(),
                         D_to_next.data(),
                         candidates,

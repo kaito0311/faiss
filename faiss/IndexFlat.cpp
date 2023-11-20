@@ -59,6 +59,7 @@ void IndexFlat::boundary_search(
         idx_t k,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         float* distances,
         idx_t* labels,
         const SearchParameters* params) const {

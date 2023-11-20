@@ -144,6 +144,7 @@ struct Index {
      * @param k           number of extracted vectors
      * @param lower       lower value of distances
      * @param upper       higher value of distances
+     * @param rm_duplicate  remove duplicate by distance
      * @param distances   output pairwise distances, size n*k
      * @param labels      output labels of the NNs, size n*k
      */
@@ -153,6 +154,7 @@ struct Index {
             idx_t k,
             const float lower,
             const float upper,
+            const bool rm_duplicate,
             float* distances,
             idx_t* labels,
             const SearchParameters* params = nullptr) const;

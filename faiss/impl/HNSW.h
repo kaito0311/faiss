@@ -206,6 +206,7 @@ struct HNSW {
             int k,
             const float lower,
             const float upper,
+            const bool rm_duplicate,
             idx_t* I,
             float* D,
             VisitedTable& vt,

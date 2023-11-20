@@ -417,6 +417,7 @@ void GpuIndexIVF::boundary_search_preassigned(
         idx_t k,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         const idx_t* assign,
         const float* centroid_dis,
         float* distances,

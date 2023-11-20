@@ -146,6 +146,7 @@ void IndexIDMapTemplate<IndexT>::boundary_search(
         idx_t k,
         const typename IndexT::distance_t lower,
         const typename IndexT::distance_t upper,
+        const bool rm_duplicate,
         typename IndexT::distance_t* distances,
         idx_t* labels,
         const SearchParameters* params) const {
@@ -168,7 +169,7 @@ void IndexIDMapTemplate<IndexT>::boundary_search(
             sel_change.set(params_non_const, &this_idtrans);
         }
     }
-    index->boundary_search(n, x, k, lower, upper, distances, labels, params);
+    index->boundary_search(n, x, k, lower, upper, rm_duplicate, distances, labels, params);
     idx_t* li = labels;
 #pragma omp parallel for
     for (idx_t i = 0; i < n * k; i++) {

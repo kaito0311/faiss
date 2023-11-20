@@ -39,6 +39,7 @@ void Index::boundary_search(
         idx_t,
         const float,
         const float,
+        const bool,
         float*,
         idx_t*,
         const SearchParameters* params) const {

@@ -713,6 +713,7 @@ void IndexIVF::boundary_search(
         idx_t k,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         float* distances,
         idx_t* labels,
         const SearchParameters* params_in) const {
@@ -732,6 +733,7 @@ void IndexIVF::boundary_search(
                                    const float* x,
                                    const float lower,
                                    const float upper,
+                                   const bool rm_duplicate,
                                    float* distances,
                                    idx_t* labels,
                                    IndexIVFStats* ivf_stats) {
@@ -756,6 +758,7 @@ void IndexIVF::boundary_search(
                 k,
                 lower,
                 upper,
+                rm_duplicate,
                 idx.get(),
                 coarse_dis.get(),
                 distances,
@@ -786,6 +789,7 @@ void IndexIVF::boundary_search(
                             x + i0 * d,
                             lower,
                             upper,
+                            rm_duplicate,
                             distances + i0 * k,
                             labels + i0 * k,
                             &stats[slice]);
@@ -807,7 +811,7 @@ void IndexIVF::boundary_search(
     } else {
         // handle parallelization at level below (or don't run in parallel at
         // all)
-        sub_search_func(n, x, lower, upper, distances, labels, &indexIVF_stats);
+        sub_search_func(n, x, lower, upper, rm_duplicate, distances, labels, &indexIVF_stats);
     }
 }
 
@@ -817,6 +821,7 @@ void IndexIVF::boundary_search_preassigned(
         idx_t k,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         const idx_t* keys,
         const float* coarse_dis,
         float* distances,
@@ -957,7 +962,7 @@ void IndexIVF::boundary_search_preassigned(
                             invlists->get_iterator(key));
 
                     nheap += scanner->iterate_codes_boundary(
-                            it.get(), lower, upper, simi, idxi, k, list_size);
+                            it.get(), lower, upper, rm_duplicate, simi, idxi, k, list_size);
 
                     return list_size;
                 } else {
@@ -992,7 +997,7 @@ void IndexIVF::boundary_search_preassigned(
                     }
 
                     nheap += scanner->scan_codes_boundary(
-                            list_size, lower, upper, codes, ids, simi, idxi, k);
+                            list_size, lower, upper, rm_duplicate, codes, ids, simi, idxi, k);
 
                     return list_size;
                 }
@@ -1717,6 +1722,7 @@ size_t InvertedListScanner::scan_codes_boundary(
         size_t list_size,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         const uint8_t* codes,
         const idx_t* ids,
         float* simi,
@@ -1767,6 +1773,7 @@ size_t InvertedListScanner::iterate_codes_boundary(
         InvertedListsIterator* it,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         float* simi,
         idx_t* idxi,
         size_t k,

@@ -95,6 +95,7 @@ void IndexScalarQuantizer::boundary_search(
         idx_t k,
         const float lower,
         const float upper,
+        const bool rm_duplicate,
         float* distances,
         idx_t* labels,
         const SearchParameters* params) const {
@@ -124,7 +125,7 @@ void IndexScalarQuantizer::boundary_search(
                 minheap_heapify(k, D, I);
             }
             scanner->set_query(x + i * d);
-            scanner->scan_codes_boundary(ntotal, lower, upper, codes.data(), nullptr, D, I, k);
+            scanner->scan_codes_boundary(ntotal, lower, upper, rm_duplicate, codes.data(), nullptr, D, I, k);
 
             // re-order heap
             if (metric_type == METRIC_L2) {
