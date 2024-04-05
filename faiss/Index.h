@@ -104,7 +104,7 @@ struct Index {
      * @param r_que  input raw quality array, size n * 1 (1 as float)
      */
     virtual void add(idx_t n, const float* x) = 0; /// r_qua: raw qualtity array
-    virtual void add(idx_t n, const float* x, const float* r_qua = nullptr) = 0; /// r_qua: raw qualtity array
+    virtual void add(idx_t n, const float* x, const float* r_qua) = 0; /// r_qua: raw qualtity array
 
     /** Same as add, but stores xids instead of sequential ids.
      *
@@ -117,7 +117,7 @@ struct Index {
      * @param xids      if non-null, ids to store for the vectors (size n)
      */
     virtual void add_with_ids(idx_t n, const float* x, const idx_t* xids);
-    virtual void add_with_ids(idx_t n, const float* x, const float* r_qua = nullptr, const idx_t* xids = nullptr);
+    virtual void add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids);
 
     /** query n vectors of dimension d to the index.
      *
