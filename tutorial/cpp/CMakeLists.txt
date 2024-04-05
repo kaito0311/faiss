@@ -18,3 +18,6 @@ target_link_libraries(4-GPU PRIVATE faiss)
 
 add_executable(5-Multiple-GPUs EXCLUDE_FROM_ALL 5-Multiple-GPUs.cpp)
 target_link_libraries(5-Multiple-GPUs PRIVATE faiss)
+
+add_executable(6-Testing-tm EXCLUDE_FROM_ALL 6-Testing-tm.cpp)
+target_link_libraries(6-Testing-tm PRIVATE faiss)

@@ -8,13 +8,14 @@
 #include <cstdio>
 #include <cstdlib>
 #include <random>
-
+#include <iostream>
 #include <faiss/IndexFlat.h>
 
 // 64-bit int
 using idx_t = faiss::idx_t;
 
 int main() {
+
     int d = 64;      // dimension
     int nb = 100000; // database size
     int nq = 10000;  // nb of queries
