@@ -440,6 +440,12 @@ void IndexFlat1D::add(idx_t n, const float* x, const float* r_qua) {
         update_permutation();
 }
 
+void IndexFlat1D::add(idx_t n, const float* x) {
+    IndexFlatL2::add(n, x);
+    if (continuous_update)
+        update_permutation();
+}
+
 void IndexFlat1D::reset() {
     IndexFlatL2::reset();
     perm.clear();

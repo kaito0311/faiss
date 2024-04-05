@@ -129,6 +129,7 @@ struct IndexFlat1D : IndexFlatL2 {
     /// the first search
     void update_permutation();
 
+    void add(idx_t n, const float* x) override;
     void add(idx_t n, const float* x, const float* r_qua) override;
 
     void reset() override;

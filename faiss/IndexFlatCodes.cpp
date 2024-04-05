@@ -32,6 +32,16 @@ void IndexFlatCodes::add(idx_t n, const float* x, const float* r_qua) {
     ntotal += n;
 }
 
+void IndexFlatCodes::add(idx_t n, const float* x) {
+    FAISS_THROW_IF_NOT(is_trained);
+    if (n == 0) {
+        return;
+    }
+    codes.resize((ntotal + n) * code_size); /// ntotal * code_size = ntotal * d * sizeof(float)
+    sa_encode(n, x, codes.data() + (ntotal * code_size));
+    ntotal += n;
+}
+
 void IndexFlatCodes::reset() {
     codes.clear();
     ntotal = 0;
