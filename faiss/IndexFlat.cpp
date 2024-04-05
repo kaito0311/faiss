@@ -273,9 +273,21 @@ void IndexFlat::sa_encode(idx_t n, const float* x, uint8_t* bytes) const {
     }
 }
 
+void IndexFlat::sa_qua_encode(idx_t n, const float* r_qua, uint8_t* bytes) const{
+    if (n > 0) {
+        memcpy(bytes, r_qua, sizeof(float) * n); 
+    }
+}
+
 void IndexFlat::sa_decode(idx_t n, const uint8_t* bytes, float* x) const {
     if (n > 0) {
         memcpy(x, bytes, sizeof(float) * d * n);
+    }
+}
+
+void IndexFlat::sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const {
+    if (n > 0) {
+        memcpy(r_qua, bytes, sizeof(float) * n); 
     }
 }
 
@@ -422,8 +434,8 @@ void IndexFlat1D::update_permutation() {
     }
 }
 
-void IndexFlat1D::add(idx_t n, const float* x) {
-    IndexFlatL2::add(n, x);
+void IndexFlat1D::add(idx_t n, const float* x, const float* r_qua) {
+    IndexFlatL2::add(n, x, r_qua);
     if (continuous_update)
         update_permutation();
 }

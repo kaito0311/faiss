@@ -141,12 +141,24 @@ size_t Index::sa_code_size() const {
     FAISS_THROW_MSG("standalone codec not implemented for this type of index");
 }
 
+size_t Index::sa_qua_code_size() const{
+    FAISS_THROW_MSG("standalone codec for quality score not implemented for this type of index");
+}
+
 void Index::sa_encode(idx_t, const float*, uint8_t*) const {
     FAISS_THROW_MSG("standalone codec not implemented for this type of index");
 }
 
+void Index::sa_qua_encode(idx_t, const float*, uint8_t*) const {
+    FAISS_THROW_MSG("standalone codec encode for quality score not implemented for this type of index");
+}
+
 void Index::sa_decode(idx_t, const uint8_t*, float*) const {
     FAISS_THROW_MSG("standalone codec not implemented for this type of index");
+}
+
+void Index::sa_qua_decode(idx_t, const uint8_t*, float*) const {
+    FAISS_THROW_MSG("standalone codec decode for quality score not implemented for this type of index");
 }
 
 namespace {

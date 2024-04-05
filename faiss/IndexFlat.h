@@ -81,7 +81,13 @@ struct IndexFlat : IndexFlatCodes {
     /* The stanadlone codec interface (just memcopies in this case) */
     void sa_encode(idx_t n, const float* x, uint8_t* bytes) const override;
 
+    void sa_qua_encode(idx_t n, const float* r_qua, uint8_t* bytes) const override;
+
     void sa_decode(idx_t n, const uint8_t* bytes, float* x) const override;
+
+    void sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const override;
+
+
 };
 
 struct IndexFlatIP : IndexFlat {
@@ -123,7 +129,7 @@ struct IndexFlat1D : IndexFlatL2 {
     /// the first search
     void update_permutation();
 
-    void add(idx_t n, const float* x) override;
+    void add(idx_t n, const float* x, const float* r_qua) override;
 
     void reset() override;
 

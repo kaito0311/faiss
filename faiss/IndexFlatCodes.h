@@ -22,6 +22,8 @@ struct CodePacker;
 struct IndexFlatCodes : Index {
     size_t code_size;
 
+    const size_t qua_size = sizeof(float); // size of quality 
+
     /// encoded dataset, size ntotal * code_size
     std::vector<uint8_t> codes;
     
@@ -33,7 +35,7 @@ struct IndexFlatCodes : Index {
     IndexFlatCodes(size_t code_size, idx_t d, MetricType metric = METRIC_L2);
 
     /// default add uses sa_encode
-    void add(idx_t n, const float* x) override;
+    void add(idx_t n, const float* x, const float* r_qua) override;
 
     void reset() override;
 
@@ -42,6 +44,8 @@ struct IndexFlatCodes : Index {
     void reconstruct(idx_t key, float* recons) const override;
 
     size_t sa_code_size() const override;
+
+    size_t sa_qua_code_size() const override;
 
     /** remove some ids. NB that because of the structure of the
      * index, the semantics of this operation are
