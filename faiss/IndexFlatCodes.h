@@ -24,6 +24,9 @@ struct IndexFlatCodes : Index {
 
     /// encoded dataset, size ntotal * code_size
     std::vector<uint8_t> codes;
+    
+    /// encoded quality, size ntotal * sizeof(float)
+    std::vector<uint8_t> qualities;
 
     IndexFlatCodes();
 

@@ -101,8 +101,9 @@ struct Index {
      * blocksize_add and calls add_core.
      * @param n      number of vectors
      * @param x      input matrix, size n * d
+     * @param r_que  input raw quality array, size n * 1 (1 as float)
      */
-    virtual void add(idx_t n, const float* x) = 0;
+    virtual void add(idx_t n, const float* x, const float* r_qua) = 0; /// r_qua: raw qualtity array
 
     /** Same as add, but stores xids instead of sequential ids.
      *
@@ -111,9 +112,10 @@ struct Index {
      *
      * @param n         number of vectors
      * @param x         input vectors, size n * d
+     * @param r_que     input raw quality array, size n * 1 (1 as float)
      * @param xids      if non-null, ids to store for the vectors (size n)
      */
-    virtual void add_with_ids(idx_t n, const float* x, const idx_t* xids);
+    virtual void add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids);
 
     /** query n vectors of dimension d to the index.
      *
@@ -292,6 +294,9 @@ struct Index {
     /** size of the produced codes in bytes */
     virtual size_t sa_code_size() const;
 
+    /** size of the produced quality codes in bytes*/
+    virtual size_t sa_qua_code_size() const; 
+
     /** encode a set of vectors
      *
      * @param n       number of vectors
@@ -299,6 +304,14 @@ struct Index {
      * @param bytes   output encoded vectors, size n * sa_code_size()
      */
     virtual void sa_encode(idx_t n, const float* x, uint8_t* bytes) const;
+    
+    /** encode a quality vector 
+    *
+    * @param n          number of quality scores 
+    * @param r_qua      input quality vector, size n * sizeof(float)
+    * @param bytes      output encoded quality vector, size n * sa_qua_code_size()
+    */
+    virtual void sa_qua_encode(idx_t n, const uint8_t* bytes, float* r_qua) const; 
 
     /** decode a set of vectors
      *
@@ -307,6 +320,14 @@ struct Index {
      * @param x       output vectors, size n * d
      */
     virtual void sa_decode(idx_t n, const uint8_t* bytes, float* x) const;
+
+    /** decode a quality vector 
+    *
+    * @param n          number of quality scores 
+    * @param bytes      input encoded quality vector, size n * sa_qua_code_size()
+    * @param r_qua      output quality vector, size n * sizeof(float)
+    */
+    virtual void sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const; 
 
     /** moves the entries from another dataset to self.
      * On output, other is empty.
