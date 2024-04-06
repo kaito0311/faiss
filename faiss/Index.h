@@ -101,10 +101,19 @@ struct Index {
      * blocksize_add and calls add_core.
      * @param n      number of vectors
      * @param x      input matrix, size n * d
+     */
+    virtual void add(idx_t n, const float* x) = 0;
+
+    /** Add n vectors of dimension d to the index.
+     *
+     * Vectors are implicitly assigned labels ntotal .. ntotal + n - 1
+     * This function slices the input vectors in chunks smaller than
+     * blocksize_add and calls add_core.
+     * @param n      number of vectors
+     * @param x      input matrix, size n * d
      * @param r_que  input raw quality array, size n * 1 (1 as float)
      */
-    virtual void add(idx_t n, const float* x) = 0; /// r_qua: raw qualtity array
-    virtual void add(idx_t n, const float* x, const float* r_qua) = 0; /// r_qua: raw qualtity array
+    virtual void add(idx_t n, const float* x, const float* r_qua); /// r_qua: raw qualtity array
 
     /** Same as add, but stores xids instead of sequential ids.
      *

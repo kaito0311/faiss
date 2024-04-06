@@ -286,7 +286,7 @@ void IndexFlat::sa_decode(idx_t n, const uint8_t* bytes, float* x) const {
 }
 
 void IndexFlat::sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const {
-    if (n > 0) {
+    if (n > 0) { // n: number of element 
         memcpy(r_qua, bytes, sizeof(float) * n); 
     }
 }

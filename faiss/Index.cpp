@@ -52,11 +52,26 @@ void Index::assign(idx_t n, const float* x, idx_t* labels, idx_t k) const {
     search(n, x, k, distances.data(), labels);
 }
 
+void Index::add(
+    idx_t /*n*/,
+    const float* /*x*/,
+    const float* /*r_qua*/) {
+        FAISS_THROW_MSG("add with quality not implemented for this type of index");
+    }
+
 void Index::add_with_ids(
         idx_t /*n*/,
         const float* /*x*/,
         const idx_t* /*xids*/) {
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
+}
+
+void Index::add_with_ids(
+        idx_t /*n*/,
+        const float* /*x*/,
+        const float* /*r_qua*/,
+        const idx_t* /*xids*/) {
+    FAISS_THROW_MSG("add_with_ids with quality not implemented for this type of index");
 }
 
 size_t Index::remove_ids(const IDSelector& /*sel*/) {

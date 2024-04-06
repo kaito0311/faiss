@@ -22,7 +22,7 @@ struct CodePacker;
 struct IndexFlatCodes : Index {
     size_t code_size;
 
-    const size_t qua_size = sizeof(float); // size of quality 
+    static const size_t qua_size = sizeof(float); // size of quality 
 
     /// encoded dataset, size ntotal * code_size
     std::vector<uint8_t> codes;

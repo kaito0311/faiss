@@ -25,6 +25,15 @@ int main() {
 
     float* xb = new float[d * nb];
     float* xq = new float[d * nq];
+    float* r_qua = new float[nb];
+
+    for (int i = 0; i < nb; i++) {
+        r_qua[i] = distrib(rng); 
+        if (i < 10) { 
+            printf("r_qua = %f \n", r_qua[i]); 
+        }
+    }
+
 
     for (int i = 0; i < nb; i++) {
         for (int j = 0; j < d; j++)
@@ -40,9 +49,23 @@ int main() {
 
     faiss::IndexFlatL2 index(d); // call constructor
     printf("is_trained = %s\n", index.is_trained ? "true" : "false");
-    index.add(nb, xb); // add vectors to the index
+    // index.add(nb, xb); // add vectors to the index
+    index.add(nb, xb, r_qua);
     printf("ntotal = %zd\n", index.ntotal);
+    printf("%ld ", index.qua_size);
 
+    
+    /* Check reconstruct vector*/
+
+    float* resconstruc_vector = new float[10]; 
+
+    // index.sa_decode(1, index.codes.data() + 0 * index.code_size, resconstruc_vector_2);
+    index.sa_qua_decode(10, index.qualities.data(), resconstruc_vector);
+
+    for (int i = 0; i < 10; i++) {
+        printf("%f %f\n", resconstruc_vector[i], r_qua[i])
+    }
+    return 0;
     int k = 4;
 
     { // sanity check: search 5 first vectors of xb
