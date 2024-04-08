@@ -1183,7 +1183,7 @@ void knn_inner_product_quality(
         size_t k,
         float* val,
         int64_t* ids,
-        const IDSelector* sel = nullptr) {
+        const IDSelector* sel) {
     
     int64_t imin = 0; 
 
@@ -1244,7 +1244,7 @@ void knn_inner_product_quality(
         size_t nx, 
         size_t ny,
         float_minheap_array_t* res,
-        const IDSelector*sel) {
+        const IDSelector* sel) {
     FAISS_THROW_IF_NOT(nx == res->nh);
     knn_inner_product_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res->k, res->val, res->ids, sel);
 }

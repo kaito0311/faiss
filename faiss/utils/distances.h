@@ -480,6 +480,21 @@ void knn_inner_products_by_idx_boundary(
         int64_t* ids,
         int64_t ld_ids = -1);
 
+void knn_inner_products_by_idx_quality(
+        const float* x, 
+        const float* y, 
+        const float lower_quality,
+        const float upper_quality,
+        const float* qualities,
+        const int64_t* ids, // selected ids
+        size_t d,
+        size_t nx, 
+        size_t ny, 
+        size_t k,
+        float* res_vals, // valu
+        int64_t* res_ids,
+        int64_t ld_ids = -1);
+
 /** Find the nearest neighbors for nx queries in a set of ny vectors
  * indexed by ids. May be useful for re-ranking a pre-selected vector list
  *
