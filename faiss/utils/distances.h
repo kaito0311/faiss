@@ -405,6 +405,19 @@ void knn_L2sqr_boundary(
         const float* y_norm2 = nullptr,
         const IDSelector* sel = nullptr);
 
+void knn_L2sqr_quality(
+        const float* x, 
+        const float* y, 
+        const float lower_quality, 
+        const float upper_quality,
+        const float* qualities, 
+        size_t d, 
+        size_t nx, 
+        size_t ny, 
+        float_maxheap_array_t* res, 
+        const float* y_norm2 = nullptr,
+        const IDSelector* sel = nullptr);
+
 /**  Return the k nearest neighors of each of the nx vectors x among the ny
  *  vector y, for the L2 distance
  *
@@ -442,6 +455,21 @@ void knn_L2sqr_boundary(
         int64_t* indexes,
         const float* y_norm2 = nullptr,
         const IDSelector* sel = nullptr);
+
+void knn_L2sqr_quality(
+        const float* x, 
+        const float* y,
+        const float lower_quality,
+        const float upper_quality, 
+        const float* qualities,
+        size_t d,
+        size_t nx, 
+        size_t ny, 
+        size_t k, 
+        float* distances, 
+        int64_t* indexes, 
+        const float* y_norm2 = nullptr, 
+        const IDSelector* sel = nullptr); 
 
 /** Find the max inner product neighbors for nx queries in a set of ny vectors
  * indexed by ids. May be useful for re-ranking a pre-selected vector list
