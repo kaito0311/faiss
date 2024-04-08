@@ -47,6 +47,18 @@ void Index::boundary_search(
     FAISS_THROW_MSG("boundary search not implemented");
 }
 
+void Index::search_with_quality(
+        idx_t, /*n*/
+        const float*, /*x*/
+        idx_t, /*k*/
+        const float, /*lower_quality*/
+        const float, /*upper_quality*/
+        float*, /*distances*/
+        idx_t*, /*labels*/
+        const SearchParameters* params) const {
+    FAISS_THROW_MSG("search with quality not implemented");
+}
+
 void Index::assign(idx_t n, const float* x, idx_t* labels, idx_t k) const {
     std::vector<float> distances(n * k);
     search(n, x, k, distances.data(), labels);

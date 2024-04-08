@@ -48,6 +48,16 @@ struct IndexFlat : IndexFlatCodes {
             float radius,
             RangeSearchResult* result,
             const SearchParameters* params = nullptr) const override;
+    
+    void search_with_quality(
+            idx_t n, 
+            const float* x, 
+            idx_t k, 
+            const float lower_quality,
+            const float upper_quality, 
+            float* distances,
+            idx_t* labels,
+            const SearchParameters* params = nullptr) const override;
 
     void reconstruct(idx_t key, float* recons) const override;
 
@@ -72,6 +82,13 @@ struct IndexFlat : IndexFlatCodes {
     }
     const float* get_xb() const {
         return (const float*)codes.data();
+    }
+
+    float* get_qualities() {
+        return (float*)qualities.data();
+    }
+    const float* get_qualities() const {
+        return (const float*)qualities.data();
     }
 
     IndexFlat() {}

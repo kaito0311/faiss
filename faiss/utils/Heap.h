@@ -50,13 +50,13 @@ inline void heap_pop(size_t k, typename C::T* bh_val, typename C::TI* bh_ids) {
     typename C::TI id = bh_ids[k];
     size_t i = 1, i1, i2;
     while (1) {
-        i1 = i << 1;
+        i1 = i << 1; /// x2 
         i2 = i1 + 1;
         if (i1 > k)
             break;
-        if ((i2 == k + 1) ||
-            C::cmp2(bh_val[i1], bh_val[i2], bh_ids[i1], bh_ids[i2])) {
-            if (C::cmp2(val, bh_val[i1], id, bh_ids[i1])) {
+        if ((i2 == k + 1) || // i1 = leaf
+            C::cmp2(bh_val[i1], bh_val[i2], bh_ids[i1], bh_ids[i2])) { // go less branch
+            if (C::cmp2(val, bh_val[i1], id, bh_ids[i1])) { // 
                 break;
             }
             bh_val[i] = bh_val[i1];

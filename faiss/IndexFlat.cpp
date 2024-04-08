@@ -102,6 +102,36 @@ void IndexFlat::range_search(
     }
 }
 
+void IndexFlat::search_with_quality(
+        idx_t n, 
+        const float* x, 
+        idx_t k, 
+        const float lower_quality,
+        const float upper_quality,
+        float* distances,
+        idx_t* labels,
+        const SearchParameters* params = nullptr) const {
+    IDSelector* sel = params ? params->sel : nullptr;
+    FAISS_THROW_IF_NOT(k > 0);
+    FAISS_THROW_IF_NOT(ntotal * qua_size != qualities.size()); /// Check size of quality
+
+    // we see the distances and labels as heaps
+    if (metric_type == METRIC_INNER_PRODUCT){
+        float_minheap_array_t res = {size_t(n), size_t(k), labels, distances};
+        knn_inner_product_quality(x, get_xb(), lower_quality, upper_quality, get_qualities(), d, n, ntotal, &res, sel);
+
+
+    } else if (metric_type == METRIC_L2) {
+
+    } else if (is_similarity_metric(metric_type)) {
+        FAISS_THROW_MSG("metric type not supported");
+    }
+    else {
+        FAISS_THROW_MSG("metric type not supported");
+    }
+}
+
+
 void IndexFlat::compute_distance_subset(
         idx_t n,
         const float* x,

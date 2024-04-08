@@ -314,6 +314,18 @@ void knn_inner_product_boundary(
         float_minheap_array_t* res,
         const IDSelector* sel = nullptr);
 
+void knn_inner_product_quality(
+        const float* x, 
+        const float* y,
+        const float lower_quality, 
+        const float upper_quality,
+        const float* qualities,
+        size_t d,
+        size_t nx, 
+        size_t ny,
+        float_minheap_array_t* res,
+        const IDSelector* sel = nullptr);
+
 /**  Return the k nearest neighors of each of the nx vectors x among the ny
  *  vector y, for the inner product metric.
  *
@@ -347,6 +359,21 @@ void knn_inner_product_boundary(
         float* distances,
         int64_t* indexes,
         const IDSelector* sel = nullptr);
+
+void knn_inner_product_quality(
+        const float* x, 
+        const float* y,
+        const float lower_quality, 
+        const float upper_quality,
+        const float* qualities_array,
+        size_t d,
+        size_t nx, 
+        size_t ny,
+        size_t k,
+        float* distances,
+        int64_t* indexes,
+        const IDSelector* sel = nullptr);
+
 /** Return the k nearest neighors of each of the nx vectors x among the ny
  *  vector y, for the L2 distance
  * @param x    query vectors, size nx * d

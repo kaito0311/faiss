@@ -191,6 +191,31 @@ struct Index {
             RangeSearchResult* result,
             const SearchParameters* params = nullptr) const;
 
+    /** query n vectors of dimension d to the index.
+     *
+     * return all vectors with distance < radius. Note that many
+     * indexes do not implement the range_search (only the k-NN search
+     * is mandatory).
+     *
+     * @param n                 number of vectors
+     * @param x                 input vectors to search, size n * d
+     * @param k                 number of extracted vectors, int
+     * @param lower_quality     lower bound score quality, float
+     * @param upper_quality     upper bound score quality, float
+     * @param distances         output pairwise distances, size n*k
+     * @param labels            output labels of the NNs, size n*k
+     */
+    virtual void search_with_quality(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            const float lower_quality,
+            const float upper_quality, 
+            float* distances,
+            idx_t* labels,
+            const SearchParameters* params = nullptr) const; 
+ 
+
     /** return the indexes of the k vectors closest to the query x.
      *
      * This function is identical as search but only return labels of neighbors.
