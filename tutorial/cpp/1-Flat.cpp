@@ -78,8 +78,8 @@ int main() {
 
     
 
-    faiss::IndexFlatIP index(d); // call constructor
-    // faiss::IndexFlatL2 index(d); // call constructor
+    // faiss::IndexFlatIP index(d); // call constructor
+    faiss::IndexFlatL2 index(d); // call constructor
     printf("is_trained = %s\n", index.is_trained ? "true" : "false");
     // index.add(nb, xb); // add vectors to the index
     index.add(nb, xb, r_qua);
@@ -106,7 +106,7 @@ int main() {
         float ip = 0.0;
 
         for (int j = 0; j < d; j++) {
-            ip += xb[j] * xb[i * d + j]; 
+            ip += fabs(xb[j] - xb[i * d + j]); 
         }
         distance_ip[i] = ip; 
     }

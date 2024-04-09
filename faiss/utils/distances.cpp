@@ -1184,9 +1184,9 @@ void knn_L2sqr_select_quality(
     if (sel) {
         exhaustive_L2sqr_seq_quality<ResultHandler, true>(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, sel);
     } else if (nx < distance_compute_blas_threshold) {
-        exhaustive_L2sqr_seq_quality(x, y, lower_quality, upper_quality, d, nx, ny, res);
+        exhaustive_L2sqr_seq_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res);
     } else {
-        exhaustive_L2sqr_blas_quality(x, y, d, nx, ny, res, y_norm2);
+        exhaustive_L2sqr_blas_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, y_norm2);
     }
 }
 

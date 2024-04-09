@@ -560,6 +560,21 @@ void knn_L2sqr_by_idx_boundary(
         int64_t* ids,
         int64_t ld_subset = -1);
 
+void knn_L2sqr_by_idx_quality(
+        const float* x, 
+        const float* y,
+        const float lower_quality, 
+        const float upper_quality, 
+        const float* qualities, 
+        const int64_t* subset,
+        size_t d,
+        size_t nx,
+        size_t nsubset,
+        size_t k,
+        float* vals,
+        int64_t* ids,
+        int64_t ld_subset = -1);
+
 /***************************************************************************
  * Range search
  ***************************************************************************/
