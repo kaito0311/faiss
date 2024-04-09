@@ -74,6 +74,8 @@ int main() {
 
 
 
+
+
     // faiss::IndexFlatIP index(d); // call constructor
     faiss::IndexFlatL2 index(d); // call constructor
     printf("is_trained = %s\n", index.is_trained ? "true" : "false");
