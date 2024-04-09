@@ -104,7 +104,7 @@ int main() {
         float ip = 0.0;
 
         for (int j = 0; j < d; j++) {
-            ip += fabs(xb[j] - xb[i * d + j]); 
+            ip += fabs(xb[1 * d + j] - xb[i * d + j]) * fabs(xb[1 * d + j] - xb[i * d + j]); 
         }
         distance_ip[i] = ip; 
     }
@@ -120,7 +120,7 @@ int main() {
     }
     std::cout << std::endl;
 
-    int k = 4;
+    int k = 1;
 
     { // sanity check: search 5 first vectors of xb
         idx_t* I = new idx_t[k * 5];

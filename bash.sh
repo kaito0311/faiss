@@ -14,8 +14,10 @@ cd build/faiss/python && python setup.py install
 # Running an example 
 ## Create an new file such as 6-Testing-tm.cpp 
 ## Run make to rebuild, if file already exist, skipp this step 
-make -C build -j8 faiss
+make -C build -j8 faiss faiss_avx2
 ## Run make to compile 
 make -C build 6-Testing-tm
+make -C build 1-Flat
 ## Run file 
 ./build/tutorial/cpp/6-Testing-tm 
+./build/tutorial/cpp/1-Flat
