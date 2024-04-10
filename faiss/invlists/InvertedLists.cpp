@@ -76,6 +76,44 @@ void InvertedLists::reset() {
     }
 }
 
+
+bool InvertedLists::has_quality(size_t list_no) const {
+    FAISS_THROW_MSG("has_quality not implemented");
+}
+
+size_t InvertedLists::quality_list_size(size_t list_no) const {
+    FAISS_THROW_MSG("quality_list_size not implemented");
+}
+
+const uint8_t* InvertedLists::get_qualities(size_t list_no) const {
+    FAISS_THROW_MSG("get_qualities not implemented");
+} 
+
+size_t InvertedLists::add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) {
+    FAISS_THROW_MSG("add_entry with quality not implemented");
+}
+
+size_t InvertedLists::add_entries(size_t list_no, size_t n_entry, const idx_t* ids, const uint8_t* code, const uint8_t* quality) {
+    FAISS_THROW_MSG("add_entries with quality not implemented");
+}
+
+void InvertedLists::release_qualities(size_t list_no, const uint8_t* qualities) const {
+    FAISS_THROW_MSG("release_qualities with quality not implemented");
+} 
+
+const uint8_t* InvertedLists::get_single_quality(size_t list_no, size_t offset) const {
+    FAISS_THROW_MSG("get_single_quality with quality not implemented");
+}
+
+void InvertedLists::update_entry(size_t list_no, size_t offset, idx_t id, const uint8_t* code, const uint8_t* quality) {
+    FAISS_THROW_MSG("update_entry with quality not implemented");
+}
+
+void InvertedLists::update_entries(size_t list_no, size_t offset, size_t n_entry, const idx_t* ids, const uint8_t* code, const uint8_t* quality) {
+    FAISS_THROW_MSG("update_entries with quality not implemented");
+}
+
+
 InvertedListsIterator* InvertedLists::get_iterator(size_t /*list_no*/) const {
     FAISS_THROW_MSG("get_iterator is not supported");
 }
@@ -237,6 +275,120 @@ ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size)
         : InvertedLists(nlist, code_size) {
     ids.resize(nlist);
     codes.resize(nlist);
+    include_quality = false; 
+}
+
+ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quality)
+        : InvertedLists(nlist, code_size) {
+    ids.resize(nlist);
+    codes.resize(nlist);
+
+    include_quality = include_quality;
+    if (include_quality) {
+        qualities.resize(nlist);
+    }
+}
+
+bool ArrayInvertedLists::has_quality(size_t list_no) const {
+    assert(list_no < nlist);
+
+    return include_quality && qualities.size() == codes.size();
+}
+
+size_t ArrayInvertedLists::quality_list_size(size_t list_no) const {
+    assert(list_no < nlist);
+
+    if (has_quality(list_no) == false) {
+        FAISS_THROW_MSG(" Has no quality ");
+        return (size_t)0; 
+    }
+
+    return ids[list_no].size();
+}
+
+const uint8_t* ArrayInvertedLists::get_qualities(size_t list_no) const {
+    assert(list_no < nlist);
+
+    if (has_quality(list_no) == false) {
+        FAISS_THROW_MSG(" Has no quality ");
+        return (size_t)0; 
+    }
+
+    return qualities[list_no].data();
+}
+
+void ArrayInvertedLists::release_qualities(size_t list_no, const uint8_t* qualities) const {
+    FAISS_THROW_MSG("ArrayInvertedLists::release_qualities with quality not implemented");
+}
+
+const uint8_t* ArrayInvertedLists::get_single_quality(size_t list_no, size_t offset) const { 
+    assert(list_no < nlist);
+
+    if (has_quality(list_no) == false) {
+        FAISS_THROW_MSG(" Has no quality ");
+        return (size_t)0; 
+    }
+
+    return get_qualities(list_no) + offset * qua_size;
+}
+
+size_t ArrayInvertedLists::add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) {
+    return add_entries(list_no, 1, &theid, code, quality);
+}
+
+size_t ArrayInvertedLists::add_entries(
+        size_t list_no,
+        size_t n_entry,
+        const idx_t* ids_in,
+        const uint8_t* code,
+        const uint8_t* quality) {
+
+    assert(list_no < nlist);
+
+    if (has_quality(list_no) == false) {
+        FAISS_THROW_MSG(" Has no quality ");
+        return (size_t)0; 
+    }
+
+    size_t o = ids[list_no].size(); 
+    ids[list_no].resize(0 + n_entry); 
+    memcpy(&ids[list_no][o], ids_in, sizeof(ids_in[0]) * n_entry);
+    codes[list_no].resize((o + n_entry) * code_size);
+    memcpy(&codes[list_no][o * code_size], code, code_size * n_entry);
+
+    qualities[list_no].resize((o + n_entry) * qua_size);
+    memcpy(&qualities[list_no][o * qua_size], quality, qua_size * n_entry);
+    return o;
+    }
+
+void ArrayInvertedLists::update_entry(
+        size_t list_no,
+        size_t offset,
+        idx_t id,
+        const uint8_t* code, 
+        const uint8_t* quality) {
+        
+    update_entries(list_no, offset, 1, &id, code, quality);
+}
+
+void ArrayInvertedLists::update_entries(
+        size_t list_no,
+        size_t offset,
+        size_t n_entry,
+        const idx_t* ids_in,
+        const uint8_t* codes_in,
+        const uint8_t* qualities_in) {
+    
+    assert(list_no < nlist);
+    assert(n_entry + offset <= ids[list_no].size());
+    if (has_quality(list_no) == false) {
+        FAISS_THROW_MSG(" Has no quality ");
+        return; 
+    }
+
+    memcpy(&ids[list_no][offset], ids_in, sizeof(ids_in[0]) * n_entry);
+    memcpy(&codes[list_no][offset * code_size], codes_in, code_size * n_entry);
+    memcpy(&qualities[list_no][offset * qua_size], qualities_in, qua_size * n_entry);
 }
 
 size_t ArrayInvertedLists::add_entries(

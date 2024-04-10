@@ -53,8 +53,15 @@ struct InvertedLists {
     // check if the list is empty
     bool is_empty(size_t list_no) const;
 
+    // check if the list is empty
+    virtual bool has_quality(size_t list_no) const;
+
+
     /// get the size of a list
     virtual size_t list_size(size_t list_no) const = 0;
+
+    /// get the size of a quality list 
+    virtual size_t quality_list_size(size_t list_no) const; 
 
     /// get iterable for lists that use_iterator
     virtual InvertedListsIterator* get_iterator(size_t list_no) const;
@@ -66,6 +73,13 @@ struct InvertedLists {
      */
     virtual const uint8_t* get_codes(size_t list_no) const = 0;
 
+    /** get the qualities for an inverted list
+     * must be released by release_codes
+     *
+     * @return qualities    size list_size * qua_size
+     */
+    virtual const uint8_t* get_qualities(size_t list_no) const;
+
     /** get the ids for an inverted list
      * must be released by release_ids
      *
@@ -75,6 +89,9 @@ struct InvertedLists {
 
     /// release codes returned by get_codes (default implementation is nop
     virtual void release_codes(size_t list_no, const uint8_t* codes) const;
+
+    /// release qualities returned by get_qualities (default implementation is nop
+    virtual void release_qualities(size_t list_no, const uint8_t* qualities) const;
 
     /// release ids returned by get_ids
     virtual void release_ids(size_t list_no, const idx_t* ids) const;
@@ -86,6 +103,10 @@ struct InvertedLists {
     /// (should be deallocated with release_codes)
     virtual const uint8_t* get_single_code(size_t list_no, size_t offset) const;
 
+    /// @return a single quality of a code in an inverted list
+    /// (should be deallocated with release_qualities)
+    virtual const uint8_t* get_single_quality(size_t list_no, size_t offset) const;
+
     /// prepare the following lists (default does nothing)
     /// a list can be -1 hence the signed long
     virtual void prefetch_lists(const idx_t* list_nos, int nlist) const;
@@ -95,6 +116,9 @@ struct InvertedLists {
 
     /// add one entry to an inverted list
     virtual size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code);
+    
+    /// add one entry to an inverted list with quality
+    virtual size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality);
 
     virtual size_t add_entries(
             size_t list_no,
@@ -102,11 +126,26 @@ struct InvertedLists {
             const idx_t* ids,
             const uint8_t* code) = 0;
 
+    /// add entries with qualities
+    virtual size_t add_entries(
+            size_t list_no,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code,
+            const uint8_t* quality);
+
     virtual void update_entry(
             size_t list_no,
             size_t offset,
             idx_t id,
             const uint8_t* code);
+
+    virtual void update_entry(
+            size_t list_no,
+            size_t offset,
+            idx_t id,
+            const uint8_t* code, 
+            const uint8_t* quality);
 
     virtual void update_entries(
             size_t list_no,
@@ -114,6 +153,14 @@ struct InvertedLists {
             size_t n_entry,
             const idx_t* ids,
             const uint8_t* code) = 0;
+
+    virtual void update_entries(
+            size_t list_no,
+            size_t offset,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code,
+            const uint8_t* quality);
 
     virtual void resize(size_t list_no, size_t new_size) = 0;
 
@@ -225,6 +272,28 @@ struct InvertedLists {
             il->release_codes(list_no, codes);
         }
     };
+
+    struct ScopedQualities {
+        const InvertedLists* il;
+        const uint8_t* qualities;
+        size_t list_no;
+
+        ScopedQualities(const InvertedLists* il, size_t list_no)
+                : il(il), qualities(il->get_qualities(list_no)), list_no(list_no) {}
+
+        ScopedQualities(const InvertedLists* il, size_t list_no, size_t offset)
+                : il(il),
+                  qualities(il->get_single_quality(list_no, offset)),
+                  list_no(list_no) {}
+
+        const uint8_t* get() {
+            return qualities;
+        }
+
+        ~ScopedQualities() {
+            il->release_qualities(list_no, qualities);
+        }
+    };
 };
 
 /// simple (default) implementation as an array of inverted lists
@@ -232,7 +301,13 @@ struct ArrayInvertedLists : InvertedLists {
     std::vector<std::vector<uint8_t>> codes; // binary codes, size nlist
     std::vector<std::vector<idx_t>> ids;     ///< Inverted lists for indexes
 
+    // qualities array 
+    std::vector<std::vector<uint8_t>> qualities; 
+    static const size_t qua_size = sizeof(float); ///< size of quality
+    bool include_quality;  
+
     ArrayInvertedLists(size_t nlist, size_t code_size);
+    ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quality = false);
 
     size_t list_size(size_t list_no) const override;
     const uint8_t* get_codes(size_t list_no) const override;
@@ -252,6 +327,33 @@ struct ArrayInvertedLists : InvertedLists {
             const uint8_t* code) override;
 
     void resize(size_t list_no, size_t new_size) override;
+    
+    bool has_quality(size_t list_no) const override; 
+    size_t quality_list_size(size_t list_no) const override;
+    const uint8_t* get_qualities(size_t list_no) const override;
+    void release_qualities(size_t list_no, const uint8_t* qualities) const override;
+    const uint8_t* get_single_quality(size_t list_no, size_t offset) const override;
+    size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) override;
+        
+    size_t add_entries(
+            size_t list_no,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code,
+            const uint8_t* quality) override;
+    void update_entry(
+            size_t list_no,
+            size_t offset,
+            idx_t id,
+            const uint8_t* code, 
+            const uint8_t* quality) override;
+    void update_entries(
+            size_t list_no,
+            size_t offset,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code,
+            const uint8_t* quality) override;
 
     /// permute the inverted lists, map maps new_id to old_id
     void permute_invlists(const idx_t* map);

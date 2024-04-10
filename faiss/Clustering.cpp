@@ -255,7 +255,7 @@ int split_clusters(
 void Clustering::train_encoded(
         idx_t nx,
         const uint8_t* x_in,
-        const Index* codec,
+        const Index* codec, // null ? 
         Index& index,
         const float* weights) {
     FAISS_THROW_IF_NOT_FMT(

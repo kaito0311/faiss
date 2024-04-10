@@ -92,14 +92,14 @@ void IndexIVFFlat::add_core(
 void IndexIVFFlat::encode_vectors(
         idx_t n,
         const float* x,
-        const idx_t* list_nos,
+        const idx_t* list_nos,// list ID of vector cluster
         uint8_t* codes,
         bool include_listnos) const {
     FAISS_THROW_IF_NOT(!by_residual);
     if (!include_listnos) {
         memcpy(codes, x, code_size * n);
     } else {
-        size_t coarse_size = coarse_code_size();
+        size_t coarse_size = coarse_code_size(); // number byte to save ID of nlist
         for (size_t i = 0; i < n; i++) {
             int64_t list_no = list_nos[i];
             uint8_t* code = codes + i * (code_size + coarse_size);

@@ -117,11 +117,15 @@ void IndexFlatCodes::merge_from(Index& otherIndex, idx_t add_id) {
            other->codes.data(),
            other->ntotal * code_size); 
 
-    qualities.resize((ntotal + other->ntotal) * qua_size); /// resize qualtity array
-    memcpy(qualities.data() + (ntotal * qua_size), 
-           other->qualities.data(),
-           other->ntotal * qua_size);
-
+    if (qualities.size() > 0) {
+        if (other->qualities.size() > 0) {
+            qualities.resize((ntotal + other->ntotal) * qua_size); /// resize qualtity array
+            memcpy(qualities.data() + (ntotal * qua_size), 
+                other->qualities.data(),
+                other->ntotal * qua_size);
+        }
+        FAISS_THROW_MSG("otherIndex not has quality array, please update it");
+    }
     ntotal += other->ntotal;
     other->reset();
 }

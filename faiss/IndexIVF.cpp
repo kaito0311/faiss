@@ -234,7 +234,7 @@ void IndexIVF::add_core(
     }
 
     std::unique_ptr<uint8_t[]> flat_codes(new uint8_t[n * code_size]);
-    encode_vectors(n, x, coarse_idx, flat_codes.get());
+    encode_vectors(n, x, coarse_idx, flat_codes.get()); // move data from x to flat codes
 
     DirectMapAdd dm_adder(direct_map, n, xids);
 
@@ -432,7 +432,7 @@ void IndexIVF::search_preassigned(
     bool do_heap_init = !(this->parallel_mode & PARALLEL_MODE_NO_HEAP_INIT);
 
     FAISS_THROW_IF_NOT_MSG(
-            max_codes == 0 || pmode == 0 || pmode == 3,
+            max_codes == 0 || pmode == 0 || pmode == 3, // if max_code != 0 and pmode != 0 or 3 -> 
             "max_codes supported only for parallel_mode = 0 or 3");
 
     if (max_codes == 0) {
@@ -492,7 +492,7 @@ void IndexIVF::search_preassigned(
 
         // single list scan using the current scanner (with query
         // set porperly) and storing results in simi and idxi
-        auto scan_one_list = [&](idx_t key,
+        auto scan_one_list = [&](idx_t key, // id of cluster
                                  float coarse_dis_i,
                                  float* simi,
                                  idx_t* idxi,
@@ -521,7 +521,7 @@ void IndexIVF::search_preassigned(
                     size_t list_size = 0;
 
                     std::unique_ptr<InvertedListsIterator> it(
-                            invlists->get_iterator(key));
+                            invlists->get_iterator(key)); // take iter to loop over the cluster
 
                     nheap += scanner->iterate_codes(
                             it.get(), simi, idxi, k, list_size);
@@ -533,7 +533,7 @@ void IndexIVF::search_preassigned(
                         list_size = list_size_max;
                     }
 
-                    InvertedLists::ScopedCodes scodes(invlists, key);
+                    InvertedLists::ScopedCodes scodes(invlists, key); // take entire a cluster with id = key
                     const uint8_t* codes = scodes.get();
 
                     std::unique_ptr<InvertedLists::ScopedIds> sids;
@@ -1503,7 +1503,7 @@ void IndexIVF::update_vectors(int n, const idx_t* new_ids, const float* x) {
     // in continuous range of ids
 
     FAISS_THROW_IF_NOT(is_trained);
-    std::vector<idx_t> assign(n);
+    std::vector<idx_t> assign(n); // id of vector cluster
     quantizer->assign(n, x, assign.data());
 
     std::vector<uint8_t> flat_codes(n * code_size);
@@ -1701,8 +1701,8 @@ size_t InvertedListScanner::iterate_codes(
 
     if (!keep_max) {
         for (; it->is_available(); it->next()) {
-            auto id_and_codes = it->get_id_and_codes();
-            float dis = distance_to_code(id_and_codes.second);
+            auto id_and_codes = it->get_id_and_codes(); // FIXME: No implemented of this function ????
+            float dis = distance_to_code(id_and_codes.second);  // compute distance the current id with query vector
             if (dis < simi[0]) {
                 maxheap_replace_top(k, simi, idxi, dis, id_and_codes.first);
                 nup++;
@@ -1712,7 +1712,7 @@ size_t InvertedListScanner::iterate_codes(
     } else {
         for (; it->is_available(); it->next()) {
             auto id_and_codes = it->get_id_and_codes();
-            float dis = distance_to_code(id_and_codes.second);
+            float dis = distance_to_code(id_and_codes.second); // compute distance the current id with query vector
             if (dis > simi[0]) {
                 minheap_replace_top(k, simi, idxi, dis, id_and_codes.first);
                 nup++;
