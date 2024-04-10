@@ -12,13 +12,24 @@
 
 #include <faiss/IndexFlat.h>
 #include <faiss/IndexIVFFlat.h>
+#include <faiss/invlists/InvertedLists.h>
 
 using idx_t = faiss::idx_t;
 
 int main() {
+
+    /// Test Invert list
+    faiss::ArrayInvertedLists il(100, sizeof(float), false);
+
+    printf("qualities size: %ld \n", il.qualities.size()); 
+    printf("has qualities : %ld \n", il.has_quality(2));
+
+    
+
+
     int d = 64;      // dimension
-    int nb = 100000; // database size
-    int nq = 10000;  // nb of queries
+    int nb = 10000; // database size
+    int nq = 1000;  // nb of queries
 
     std::mt19937 rng;
     std::uniform_real_distribution<> distrib;
@@ -38,7 +49,7 @@ int main() {
         xq[d * i] += i / 1000.;
     }
 
-    int nlist = 100;
+    int nlist = 10;
     int k = 4;
 
     faiss::IndexFlatL2 quantizer(d); // the other index

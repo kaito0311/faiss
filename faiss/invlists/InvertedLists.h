@@ -307,7 +307,7 @@ struct ArrayInvertedLists : InvertedLists {
     bool include_quality;  
 
     ArrayInvertedLists(size_t nlist, size_t code_size);
-    ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quality = false);
+    ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quality);
 
     size_t list_size(size_t list_no) const override;
     const uint8_t* get_codes(size_t list_no) const override;

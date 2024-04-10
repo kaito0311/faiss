@@ -17,7 +17,7 @@ cd build/faiss/python && python setup.py install
 make -C build -j8 faiss faiss_avx2
 ## Run make to compile 
 make -C build 6-Testing-tm
-make -C build 1-Flat
+make -C build 2-IVFFlat
 ## Run file 
 ./build/tutorial/cpp/6-Testing-tm 
-./build/tutorial/cpp/1-Flat
+make -C build 2-IVFFlat && ./build/tutorial/cpp/2-IVFFlat
