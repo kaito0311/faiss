@@ -34,6 +34,13 @@ struct IndexIVFFlat : IndexIVF {
             const idx_t* xids,
             const idx_t* precomputed_idx) override;
 
+    void add_core(
+            idx_t n,
+            const float* x,
+            const float* r_qua,
+            const idx_t* xids,
+            const idx_t* precomputed_idx) override;
+    
     void encode_vectors(
             idx_t n,
             const float* x,
@@ -48,7 +55,12 @@ struct IndexIVFFlat : IndexIVF {
     void reconstruct_from_offset(int64_t list_no, int64_t offset, float* recons)
             const override;
 
+    void reconstruct_qua_from_offset(int64_t list_no, int64_t offset, float* qua_recons)
+            const override;
+
     void sa_decode(idx_t n, const uint8_t* bytes, float* x) const override;
+
+    void sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const override;
 
     IndexIVFFlat();
 };

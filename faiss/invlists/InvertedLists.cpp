@@ -425,6 +425,10 @@ const idx_t* ArrayInvertedLists::get_ids(size_t list_no) const {
 void ArrayInvertedLists::resize(size_t list_no, size_t new_size) {
     ids[list_no].resize(new_size);
     codes[list_no].resize(new_size * code_size);
+
+    if (has_quality(list_no)){
+        qualities[list_no].resize(new_size * qua_size); 
+    }
 }
 
 void ArrayInvertedLists::update_entries(
@@ -442,15 +446,23 @@ void ArrayInvertedLists::update_entries(
 void ArrayInvertedLists::permute_invlists(const idx_t* map) {
     std::vector<std::vector<uint8_t>> new_codes(nlist);
     std::vector<std::vector<idx_t>> new_ids(nlist);
+    std::vector<std::vector<uint8_t>> new_qualities(nlist);
 
     for (size_t i = 0; i < nlist; i++) {
         size_t o = map[i];
         FAISS_THROW_IF_NOT(o < nlist);
         std::swap(new_codes[i], codes[o]);
         std::swap(new_ids[i], ids[o]);
+
+        if (has_quality(0) == true) {
+            std::swap(new_qualities[i], qualities[o]); 
+        }
     }
     std::swap(codes, new_codes);
     std::swap(ids, new_ids);
+    if (has_quality(0) == true) {
+        std::swap(qualities, new_qualities);
+    }
 }
 
 ArrayInvertedLists::~ArrayInvertedLists() {}

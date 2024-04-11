@@ -120,6 +120,39 @@ struct IndexIVFInterface : Level1Quantizer {
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const = 0;
+        
+    /** search a set of vectors, that are pre-quantized by the IVF
+     *  quantizer. Fill in the corresponding heaps with the query
+     *  results. The default implementation uses InvertedListScanners
+     *  to do the search.
+     *
+     * @param n      nb of vectors to query
+     * @param x      query vectors, size nx * d
+     * @param assign coarse quantization indices, size nx * nprobe
+     * @param centroid_dis
+     *               distances to coarse centroids, size nx * nprobe
+     * @param distance
+     *               output distances, size n * k
+     * @param labels output labels, size n * k
+     * @param store_pairs store inv list index + inv list offset
+     *                     instead in upper/lower 32 bit of result,
+     *                     instead of ids (used for reranking).
+     * @param params used to override the object's search parameters
+     * @param stats  search stats to be updated (can be null)
+     */
+    virtual void search_preassigned_with_quality(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            const idx_t* assign,
+            const float* centroid_dis,
+            const float lower_quality, 
+            const float upper_quality,
+            float* distances,
+            idx_t* labels,
+            bool store_pairs,
+            const IVFSearchParameters* params = nullptr,
+            IndexIVFStats* stats = nullptr) const = 0;
 
     /** search a set of vectors, that are pre-quantized by the IVF
      *  quantizer. Fill in the corresponding heaps with the query
@@ -214,6 +247,8 @@ struct IndexIVF : Index, IndexIVFInterface {
     bool own_invlists = false;
 
     size_t code_size = 0; ///< code size per vector in bytes
+    static const size_t qua_size = sizeof(float); /// quality size per value of vector  
+
 
     /** Parallel mode determines how queries are parallelized with OpenMP
      *
@@ -255,8 +290,14 @@ struct IndexIVF : Index, IndexIVFInterface {
     /// Calls add_with_ids with NULL ids
     void add(idx_t n, const float* x) override;
 
+    /// Calls add_with_ids with NULL ids
+    void add(idx_t n, const float* x, const float* r_qua) override; 
+
     /// default implementation that calls encode_vectors
     void add_with_ids(idx_t n, const float* x, const idx_t* xids) override;
+
+    /// default implementation that calls encode_vectors
+    void add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids) override;
 
     /** Implementation of vector addition where the vector assignments are
      * predefined. The default implementation hands over the code extraction to
@@ -268,6 +309,20 @@ struct IndexIVF : Index, IndexIVFInterface {
     virtual void add_core(
             idx_t n,
             const float* x,
+            const idx_t* xids,
+            const idx_t* precomputed_idx);
+
+    /** Implementation of vector addition where the vector assignments are
+     * predefined. The default implementation hands over the code extraction to
+     * encode_vectors.
+     *
+     * @param precomputed_idx    quantization indices for the input vectors
+     * (size n)
+     */
+    virtual void add_core(
+            idx_t n,
+            const float* x,
+            const float* r_qua,
             const idx_t* xids,
             const idx_t* precomputed_idx);
 
@@ -287,12 +342,39 @@ struct IndexIVF : Index, IndexIVFInterface {
             uint8_t* codes,
             bool include_listno = false) const = 0;
 
+    /** Encodes a set of vectors as they would appear in the inverted lists
+     *
+     * @param list_nos   inverted list ids as returned by the
+     *                   quantizer (size n). -1s are ignored.
+     * @param codes      output codes, size n * code_size
+     * @param qualities  output qualities, size n * qua_size
+     * @param include_listno
+     *                   include the list ids in the code (in this case add
+     *                   ceil(log8(nlist)) to the code size)
+     */
+    virtual void encode_vectors(
+            idx_t n,
+            const float* x,
+            const float* r_qua,
+            const idx_t* list_nos,
+            uint8_t* codes,
+            uint8_t* qualities,
+            bool include_listno = false) const;
+
     /** Add vectors that are computed with the standalone codec
      *
      * @param codes  codes to add size n * sa_code_size()
      * @param xids   corresponding ids, size n
      */
     void add_sa_codes(idx_t n, const uint8_t* codes, const idx_t* xids);
+
+    /** Add vectors that are computed with the standalone codec
+     *
+     * @param codes     codes to add size n * sa_code_size()
+     * @param qualities qualities to add size n * sa_qua_code_size()
+     * @param xids      corresponding ids, size n
+     */
+    void add_sa_codes(idx_t n, const uint8_t* codes, const uint8_t* qualities, const idx_t* xids);
 
     /** Train the encoder for the vectors.
      *
@@ -331,7 +413,19 @@ struct IndexIVF : Index, IndexIVFInterface {
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const override;
-
+    void search_preassigned_with_quality(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            const idx_t* assign, // number of ID cluster
+            const float* centroid_dis,
+            const float lower_quality, 
+            const float upper_quality,
+            float* distances,
+            idx_t* labels,
+            bool store_pairs,
+            const IVFSearchParameters* params = nullptr,
+            IndexIVFStats* stats = nullptr) const override;
     void range_search_preassigned(
             idx_t nx,
             const float* x,
@@ -371,6 +465,16 @@ struct IndexIVF : Index, IndexIVFInterface {
             float radius,
             RangeSearchResult* result,
             const SearchParameters* params = nullptr) const override;
+    
+    void search_with_quality(
+            idx_t n,
+            const float* x, 
+            idx_t k, 
+            const float lower_quality, 
+            const float upper_quality, 
+            float* distances, 
+            idx_t* labels, 
+            const SearchParameters* params = nullptr) const override;
 
     /** Get a scanner for this index (store_pairs means ignore labels)
      *
@@ -383,6 +487,9 @@ struct IndexIVF : Index, IndexIVFInterface {
     /** reconstruct a vector. Works only if maintain_direct_map is set to 1 or 2
      */
     void reconstruct(idx_t key, float* recons) const override;
+    /** reconstruct a vector. Works only if maintain_direct_map is set to 1 or 2
+     */
+    void reconstruct_qua(idx_t key, float* qua_recons) const override;
 
     /** Update a subset of vectors.
      *
@@ -404,6 +511,16 @@ struct IndexIVF : Index, IndexIVFInterface {
      * @param recons output array of reconstructed vectors, size ni * d
      */
     void reconstruct_n(idx_t i0, idx_t ni, float* recons) const override;
+    /** Reconstruct a subset of the indexed vectors.
+     *
+     * Overrides default implementation to bypass reconstruct() which requires
+     * direct_map to be maintained.
+     *
+     * @param i0     first vector to reconstruct
+     * @param ni     nb of vectors to reconstruct
+     * @param qua_recons output array of reconstructed vectors, size ni * 1
+     */
+    void reconstruct_qua_n(idx_t i0, idx_t ni, float* qua_recons) const override;
 
     /** Similar to search, but also reconstructs the stored vectors (or an
      * approximation in the case of lossy coding) for the search results.
@@ -434,6 +551,18 @@ struct IndexIVF : Index, IndexIVFInterface {
             int64_t list_no,
             int64_t offset,
             float* recons) const;
+
+    /** Reconstruct a quality value given the location in terms of (inv list index +
+     * inv list offset) instead of the id.
+     *
+     * Useful for reconstructing when the direct_map is not maintained and
+     * the inv list offset is computed by search_preassigned() with
+     * `store_pairs` set.
+     */
+    virtual void reconstruct_qua_from_offset(
+            int64_t list_no,
+            int64_t offset,
+            float* qua_recons) const;
 
     /// Dataset manipulation functions
 
@@ -478,7 +607,12 @@ struct IndexIVF : Index, IndexIVFInterface {
 
     /* The standalone codec interface (except sa_decode that is specific) */
     size_t sa_code_size() const override;
+
+    size_t sa_qua_code_size() const override;
+
     void sa_encode(idx_t n, const float* x, uint8_t* bytes) const override;
+
+    void sa_qua_encode(idx_t n, const float* r_qua, uint8_t* bytes) const override;
 
     IndexIVF();
 };
@@ -562,6 +696,40 @@ struct InvertedListScanner {
             const float upper,
             const float duplicate_thr,
             const bool rm_duplicate,
+            float* distances,
+            idx_t* labels,
+            size_t k,
+            size_t& list_size) const;
+
+    /** scan a set of codes, compute distances to current query and
+     * update heap of results if necessary. Default implemetation
+     * calls distance_to_code.
+     *
+     * @param n                 number of codes to scan
+     * @param codes             codes to scan (n * code_size)
+     * @param ids               corresponding ids (ignored if store_pairs)
+     * @param qualities         coressponding qualities (n * qua_size)
+     * @param lower_quality     lower bound quality to filter
+     * @param upper_qualitiy    upper bound quality to filter
+     * @param distances         heap distances (size k)
+     * @param labels            heap labels (size k)
+     * @param k                 heap size
+     * @return number of heap updates performed
+     */
+    virtual size_t scan_codes_with_quality(
+            size_t n, 
+            const uint8_t* codes, 
+            const idx_t* ids, 
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality, 
+            float* distances, 
+            idx_t* labels,
+            size_t k) const; 
+    
+    // same as scan_codes, using an iterator with quality. TODO: It's seem never call -> check it
+    virtual size_t iterate_codes_with_quality(
+            InvertedListsIterator* iterator,
             float* distances,
             idx_t* labels,
             size_t k,

@@ -89,6 +89,56 @@ void IndexIVFFlat::add_core(
     ntotal += n;
 }
 
+void IndexIVFFlat::add_core(
+        idx_t n,
+        const float* x,
+        const float* r_qua,
+        const idx_t* xids,
+        const idx_t* coarse_idx) {
+    FAISS_THROW_IF_NOT(is_trained);
+    FAISS_THROW_IF_NOT(coarse_idx);
+    FAISS_THROW_IF_NOT(!by_residual);
+    assert(invlists);
+    FAISS_THROW_IF_NOT(invlists->has_quality(0));
+    direct_map.check_can_add(xids);
+
+    int64_t n_add = 0;
+
+    DirectMapAdd dm_adder(direct_map, n, xids);
+
+#pragma omp parallel reduction(+ : n_add)
+    {
+        int nt = omp_get_num_threads();
+        int rank = omp_get_thread_num();
+
+        // each thread takes care of a subset of lists
+        for (size_t i = 0; i < n; i++) {
+            idx_t list_no = coarse_idx[i];
+
+            if (list_no >= 0 && list_no % nt == rank) {
+                idx_t id = xids ? xids[i] : ntotal + i;
+                const float* xi = x + i * d;
+                const float* r_qua_i = r_qua + i * 1; 
+                size_t offset =
+                        invlists->add_entry(list_no, id, (const uint8_t*)xi, (const uint8_t*)r_qua_i);
+                dm_adder.add(i, list_no, offset);
+                n_add++;
+            } else if (rank == 0 && list_no == -1) {
+                dm_adder.add(i, -1, 0);
+            }
+        }
+    }
+
+    if (verbose) {
+        printf("IndexIVFFlat::add_core: added %" PRId64 " / %" PRId64
+               " vectors\n",
+               n_add,
+               n);
+    }
+    ntotal += n;
+}
+
+
 void IndexIVFFlat::encode_vectors(
         idx_t n,
         const float* x,
@@ -121,6 +171,9 @@ void IndexIVFFlat::sa_decode(idx_t n, const uint8_t* bytes, float* x) const {
         float* xi = x + i * d;
         memcpy(xi, code + coarse_size, code_size);
     }
+}
+void IndexIVFFlat::sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const {
+    FAISS_THROW_MSG("IndexIVFFlat::sa_qua_decode is not implemented");
 }
 
 namespace {
@@ -233,6 +286,13 @@ void IndexIVFFlat::reconstruct_from_offset(
         int64_t offset,
         float* recons) const {
     memcpy(recons, invlists->get_single_code(list_no, offset), code_size);
+}
+
+void IndexIVFFlat::reconstruct_qua_from_offset(
+        int64_t list_no,
+        int64_t offset,
+        float* qua_recons) const {
+    memcpy(qua_recons, invlists->get_single_quality(list_no, offset), qua_size);
 }
 
 /*****************************************

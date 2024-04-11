@@ -243,6 +243,14 @@ struct Index {
      */
     virtual void reconstruct(idx_t key, float* recons) const;
 
+    /** Reconstruct a stored quality value (or an approximation if lossy coding)
+     *
+     * this function may not be defined for some indexes
+     * @param key         id of the vector to reconstruct
+     * @param qua_recons  reconstucted vector (size 1)
+     */
+    virtual void reconstruct_qua(idx_t key, float* qua_recons) const;
+
     /** Reconstruct several stored vectors (or an approximation if lossy coding)
      *
      * this function may not be defined for some indexes
@@ -261,6 +269,15 @@ struct Index {
      * @param recons      reconstucted vector (size ni * d)
      */
     virtual void reconstruct_n(idx_t i0, idx_t ni, float* recons) const;
+
+    /** Reconstruct vectors i0 to i0 + ni - 1
+     *
+     * this function may not be defined for some indexes
+     * @param i0          index of the first vector in the sequence
+     * @param ni          number of vectors in the sequence
+     * @param qua_recons  reconstucted vector (size ni * 1)
+     */
+    virtual void reconstruct_qua_n(idx_t i0, idx_t ni, float* qua_recons) const;
 
     /** Similar to search, but also reconstructs the stored vectors (or an
      * approximation in the case of lossy coding) for the search results.
