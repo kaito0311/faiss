@@ -63,6 +63,11 @@ struct InvertedLists {
     /// get the size of a quality list 
     virtual size_t quality_list_size(size_t list_no) const; 
 
+    /// 
+    virtual bool get_include_quality() const; 
+    virtual size_t get_quality_size() const; 
+    virtual size_t get_codes_size() const; 
+
     /// get iterable for lists that use_iterator
     virtual InvertedListsIterator* get_iterator(size_t list_no) const;
 
@@ -312,6 +317,9 @@ struct ArrayInvertedLists : InvertedLists {
     size_t list_size(size_t list_no) const override;
     const uint8_t* get_codes(size_t list_no) const override;
     const idx_t* get_ids(size_t list_no) const override;
+    bool get_include_quality() const override; 
+    size_t get_quality_size() const override;
+    size_t get_codes_size() const override;
 
     size_t add_entries(
             size_t list_no,

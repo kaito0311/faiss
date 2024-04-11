@@ -2023,6 +2023,12 @@ void IndexIVF::reconstruct_from_offset(
         float* /*recons*/) const {
     FAISS_THROW_MSG("reconstruct_from_offset not implemented");
 }
+void IndexIVF::reconstruct_qua_from_offset(
+        int64_t /*list_no*/,
+        int64_t /*offset*/,
+        float* /*recons*/) const {
+    FAISS_THROW_MSG("IndexIVF::reconstruct_qua_from_offset not implemented");
+}
 
 void IndexIVF::reset() {
     direct_map.clear();

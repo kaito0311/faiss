@@ -16,8 +16,8 @@ using idx_t = faiss::idx_t;
 
 int main() {
     int d = 64;      // dimension
-    int nb = 100000; // database size
-    int nq = 10000;  // nb of queries
+    int nb = 10000; // database size
+    int nq = 1000;  // nb of queries
 
     std::mt19937 rng;
     std::uniform_real_distribution<> distrib;
@@ -37,7 +37,7 @@ int main() {
         xq[d * i] += i / 1000.;
     }
 
-    int nlist = 100;
+    int nlist = 10;
     int k = 4;
     int m = 8;                       // bytes per vector
     faiss::IndexFlatL2 quantizer(d); // the other index
@@ -45,6 +45,17 @@ int main() {
 
     index.train(nb, xb);
     index.add(nb, xb);
+    float* resconstruc_vector = new float[d]; 
+
+    index.reconstruct_from_offset(0, 0, resconstruc_vector);
+    printf("%ld\n", index.invlists->code_size);
+    printf("%ld\n", index.code_size);
+
+    for (int i = 0; i < d; i++){
+        printf("%f ", resconstruc_vector[i]);
+    }
+
+    return 0; 
 
     { // sanity check
         idx_t* I = new idx_t[k * 5];

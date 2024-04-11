@@ -85,6 +85,16 @@ size_t InvertedLists::quality_list_size(size_t list_no) const {
     FAISS_THROW_MSG("quality_list_size not implemented");
 }
 
+bool InvertedLists::get_include_quality() const {
+    FAISS_THROW_MSG("get_include_quality not implemented");
+}
+size_t InvertedLists::get_quality_size() const {
+    FAISS_THROW_MSG("InvertedLists::get_quality_size not implemented");
+}
+size_t InvertedLists::get_codes_size() const {
+    FAISS_THROW_MSG("InvertedLists::get_codes_size not implemented");
+}
+
 const uint8_t* InvertedLists::get_qualities(size_t list_no) const {
     FAISS_THROW_MSG("get_qualities not implemented");
 } 
@@ -282,9 +292,8 @@ ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size, bool incl
         : InvertedLists(nlist, code_size) {
     ids.resize(nlist);
     codes.resize(nlist);
-
     include_quality = include_quaity_in;
-    if (include_quality) {
+    if (include_quaity_in == true) {
         qualities.resize(nlist);
     }
 }
@@ -304,6 +313,17 @@ size_t ArrayInvertedLists::quality_list_size(size_t list_no) const {
     }
 
     return ids[list_no].size();
+}
+
+bool ArrayInvertedLists::get_include_quality() const {
+    return include_quality;
+}
+size_t ArrayInvertedLists::get_quality_size() const {
+    return qualities.size();
+}
+
+size_t ArrayInvertedLists::get_codes_size() const { 
+    return codes.size();
 }
 
 const uint8_t* ArrayInvertedLists::get_qualities(size_t list_no) const {
@@ -343,6 +363,9 @@ size_t ArrayInvertedLists::add_entries(
         const uint8_t* code,
         const uint8_t* quality) {
 
+    if (n_entry == 0)
+        return 0;
+
     assert(list_no < nlist);
 
     if (has_quality(list_no) == false) {
@@ -350,8 +373,8 @@ size_t ArrayInvertedLists::add_entries(
         return (size_t)0; 
     }
 
-    size_t o = ids[list_no].size(); 
-    ids[list_no].resize(0 + n_entry); 
+    size_t o = ids[list_no].size();
+    ids[list_no].resize(o + n_entry);
     memcpy(&ids[list_no][o], ids_in, sizeof(ids_in[0]) * n_entry);
     codes[list_no].resize((o + n_entry) * code_size);
     memcpy(&codes[list_no][o * code_size], code, code_size * n_entry);

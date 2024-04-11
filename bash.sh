@@ -21,3 +21,4 @@ make -C build 2-IVFFlat
 ## Run file 
 ./build/tutorial/cpp/6-Testing-tm 
 make -C build 2-IVFFlat && ./build/tutorial/cpp/2-IVFFlat
+make -C build 3-IVFPQ && ./build/tutorial/cpp/3-IVFPQ
