@@ -173,6 +173,26 @@ IndexIVF::IndexIVF(
     }
 }
 
+IndexIVF::IndexIVF(
+        Index* quantizer,
+        size_t d,
+        size_t nlist,
+        size_t code_size,
+        bool include_quality,
+        MetricType metric)
+        : Index(d, metric),
+          IndexIVFInterface(quantizer, nlist),
+          invlists(new ArrayInvertedLists(nlist, code_size, include_quality)),
+          own_invlists(true),
+          code_size(code_size) {
+    FAISS_THROW_IF_NOT(d == quantizer->d);
+    is_trained = quantizer->is_trained && (quantizer->ntotal == nlist);
+    // Spherical by default if the metric is inner_product
+    if (metric_type == METRIC_INNER_PRODUCT) {
+        cp.spherical = true;
+    }
+}
+
 IndexIVF::IndexIVF() = default;
 
 void IndexIVF::add(idx_t n, const float* x) {

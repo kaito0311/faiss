@@ -27,6 +27,12 @@ struct IndexIVFFlat : IndexIVF {
             size_t d,
             size_t nlist_,
             MetricType = METRIC_L2);
+    IndexIVFFlat(
+            Index* quantizer,
+            size_t d,
+            size_t nlist_,
+            bool include_quality,
+            MetricType = METRIC_L2);
 
     void add_core(
             idx_t n,

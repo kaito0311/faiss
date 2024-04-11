@@ -278,12 +278,12 @@ ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size)
     include_quality = false; 
 }
 
-ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quality)
+ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quaity_in)
         : InvertedLists(nlist, code_size) {
     ids.resize(nlist);
     codes.resize(nlist);
 
-    include_quality = include_quality;
+    include_quality = include_quaity_in;
     if (include_quality) {
         qualities.resize(nlist);
     }

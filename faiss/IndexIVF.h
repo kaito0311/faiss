@@ -281,6 +281,21 @@ struct IndexIVF : Index, IndexIVFInterface {
             size_t nlist,
             size_t code_size,
             MetricType metric = METRIC_L2);
+    
+    /** The Inverted file takes a quantizer (an Index) on input,
+     * which implements the function mapping a vector to a list
+     * identifier.
+     */
+    IndexIVF(
+            Index* quantizer,
+            size_t d,
+            size_t nlist,
+            size_t code_size,
+            bool include_quality,
+            MetricType metric = METRIC_L2);
+    
+
+   
 
     void reset() override;
 

@@ -38,6 +38,16 @@ IndexIVFFlat::IndexIVFFlat(
     code_size = sizeof(float) * d;
     by_residual = false;
 }
+IndexIVFFlat::IndexIVFFlat(
+        Index* quantizer,
+        size_t d,
+        size_t nlist,
+        bool include_quality,
+        MetricType metric)
+        : IndexIVF(quantizer, d, nlist, sizeof(float) * d, include_quality, metric) {
+    code_size = sizeof(float) * d;
+    by_residual = false;
+}
 
 IndexIVFFlat::IndexIVFFlat() {
     by_residual = false;
