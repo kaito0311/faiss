@@ -725,7 +725,7 @@ struct InvertedListScanner {
      * @param ids               corresponding ids (ignored if store_pairs)
      * @param qualities         coressponding qualities (n * qua_size)
      * @param lower_quality     lower bound quality to filter
-     * @param upper_qualitiy    upper bound quality to filter
+     * @param upper_quality    upper bound quality to filter
      * @param distances         heap distances (size k)
      * @param labels            heap labels (size k)
      * @param k                 heap size

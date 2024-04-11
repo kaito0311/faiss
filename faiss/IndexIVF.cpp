@@ -543,7 +543,7 @@ void IndexIVF::search_with_quality(
 
         double t1 = getmillisecs();
         invlists->prefetch_lists(idx.get(), n * nprobe);
-
+        // printf("Search search_preassigned_with_quality \n");
         search_preassigned_with_quality(
                 n,
                 x,
@@ -561,6 +561,50 @@ void IndexIVF::search_with_quality(
         ivf_stats->quantization_time += t1 - t0;
         ivf_stats->search_time += t2 - t0;
     };
+
+    if ((parallel_mode & ~PARALLEL_MODE_NO_HEAP_INIT) == 0) {
+        int nt = std::min(omp_get_max_threads(), int(n));
+        std::vector<IndexIVFStats> stats(nt);
+        std::mutex exception_mutex;
+        std::string exception_string;
+
+#pragma omp parallel for if (nt > 1)
+        for (idx_t slice = 0; slice < nt; slice++) {
+            IndexIVFStats local_stats;
+            idx_t i0 = n * slice / nt;
+            idx_t i1 = n * (slice + 1) / nt;
+            if (i1 > i0) {
+                try {
+                    // printf("running: %ld / %ld \n", i1, n);
+                    sub_search_func(
+                            i1 - i0,
+                            x + i0 * d,
+                            lower_quality,
+                            upper_quality,
+                            distances + i0 * k,
+                            labels + i0 * k,
+                            &stats[slice]);
+                } catch (const std::exception& e) {
+                    std::lock_guard<std::mutex> lock(exception_mutex);
+                    exception_string = e.what();
+                }
+            }
+        }
+
+        if (!exception_string.empty()) {
+            FAISS_THROW_MSG(exception_string.c_str());
+        }
+
+        // collect stats
+        for (idx_t slice = 0; slice < nt; slice++) {
+            indexIVF_stats.add(stats[slice]);
+        }
+    } else {
+        // handle parallelization at level below (or don't run in parallel at
+        // all)
+        sub_search_func(n, x, lower_quality, upper_quality, distances, labels, &indexIVF_stats);
+    }
+
 }
 
 void IndexIVF::search_preassigned(
@@ -1074,7 +1118,8 @@ void IndexIVF::search_preassigned_with_quality(
 
                     nheap += scanner->scan_codes_with_quality(
                             list_size, codes, ids, qualities, lower_quality, upper_quality, simi, idxi, k);
-
+                    // nheap += scanner->scan_codes(
+                    //         list_size, codes, ids, simi, idxi, k);
                     return list_size;
                 }
             } catch (const std::exception& e) {
@@ -2220,7 +2265,6 @@ size_t InvertedListScanner::scan_codes(
         idx_t* idxi,
         size_t k) const {
     size_t nup = 0;
-
     if (!keep_max) {
         for (size_t j = 0; j < list_size; j++) {
             float dis = distance_to_code(codes);
@@ -2434,11 +2478,14 @@ size_t InvertedListScanner::scan_codes_with_quality(
         float* simi, 
         idx_t* idxi,
         size_t k) const {
+
     size_t nup = 0; 
     const float* curr_qualities = (float*)qualities;
     if (!keep_max) {
         for (size_t j = 0; j < list_size; j++) {
             float curr_quality = curr_qualities[0]; 
+            printf("code size: %ld \n", code_size);
+            printf("curr quality: %f \n", curr_quality);
             if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
                 float dis = distance_to_code(codes);
                 if (dis < simi[0]) {

@@ -338,7 +338,6 @@ const uint8_t* ArrayInvertedLists::get_qualities(size_t list_no) const {
 }
 
 void ArrayInvertedLists::release_qualities(size_t list_no, const uint8_t* qualities) const {
-    FAISS_THROW_MSG("ArrayInvertedLists::release_qualities with quality not implemented");
 }
 
 const uint8_t* ArrayInvertedLists::get_single_quality(size_t list_no, size_t offset) const { 
@@ -381,6 +380,7 @@ size_t ArrayInvertedLists::add_entries(
 
     qualities[list_no].resize((o + n_entry) * qua_size);
     memcpy(&qualities[list_no][o * qua_size], quality, qua_size * n_entry);
+    
     return o;
     }
 

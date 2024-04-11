@@ -99,7 +99,7 @@ int main() {
 
     }
     
-    return 0; 
+
 
     { // search xq
         idx_t* I = new idx_t[k * nq];
@@ -113,6 +113,30 @@ int main() {
                 printf("%5zd ", I[i * k + j]);
             printf("\n");
         }
+
+        // index.boundary_search(nq, xq, k, 0, 2, 0.000001, false, D, I);
+
+        // printf("I=\n");
+        // for (int i = nq - 5; i < nq; i++) {
+        //     for (int j = 0; j < k; j++)
+        //         printf("%5zd ", I[i * k + j]);
+        //     printf("\n");
+        // }
+
+        // return 0; 
+        index.search_with_quality(nq, xq, k, 0, 0.5, D, I);
+
+        printf("I=\n");
+        for (int i = nq - 5; i < nq; i++) {
+            for (int j = 0; j < k; j++){
+                index.reconstruct_qua(I[i * k + j], qua_reconstruct);
+                printf("%5zd %f ", I[i * k + j], qua_reconstruct[0]);
+
+            }
+            
+            printf("\n");
+        }
+        return 0; 
 
         index.nprobe = 10;
         index.search(nq, xq, k, D, I);

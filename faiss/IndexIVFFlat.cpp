@@ -219,6 +219,7 @@ struct IVFFlatScanner : InvertedListScanner {
             float* simi,
             idx_t* idxi,
             size_t k) const override {
+
         const float* list_vecs = (const float*)codes;
         size_t nup = 0;
         for (size_t j = 0; j < list_size; j++) {
@@ -233,6 +234,39 @@ struct IVFFlatScanner : InvertedListScanner {
                 int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
                 heap_replace_top<C>(k, simi, idxi, dis, id);
                 nup++;
+            }
+        }
+        return nup;
+    }
+
+    size_t scan_codes_with_quality(
+            size_t list_size,
+            const uint8_t* codes,
+            const idx_t* ids,
+            const uint8_t* qualities,
+            const float lower_quality,
+            const float upper_quality,
+            float* simi,
+            idx_t* idxi,
+            size_t k) const override {
+        const float* list_vecs = (const float*)codes;
+        const float* list_qualities = (const float*)qualities;
+        size_t nup = 0;
+        for (size_t j = 0; j < list_size; j++) {
+            const float* yj = list_vecs + d * j;
+            const float curr_quality = list_qualities[j];
+            if (use_sel && !sel->is_member(ids[j])) {
+                continue;
+            }
+            if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
+                float dis = metric == METRIC_INNER_PRODUCT
+                        ? fvec_inner_product(xi, yj, d)
+                        : fvec_L2sqr(xi, yj, d);
+                if (C::cmp(simi[0], dis)) {
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    heap_replace_top<C>(k, simi, idxi, dis, id);
+                    nup++;
+                }
             }
         }
         return nup;
