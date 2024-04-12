@@ -488,6 +488,36 @@ void ArrayInvertedLists::permute_invlists(const idx_t* map) {
     }
 }
 
+
+void ArrayInvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
+#pragma omp parallel for
+    for (idx_t i = 0; i < nlist; i++) {
+        size_t list_size = oivf->list_size(i);
+        ScopedIds ids(oivf, i);
+        if (add_id == 0) {
+            if (oivf->has_quality(0)){
+                add_entries(i, list_size, ids.get(), ScopedCodes(oivf, i).get(), ScopedQualities(oivf, i).get());
+            } else {
+                add_entries(i, list_size, ids.get(), ScopedCodes(oivf, i).get());
+            }
+        } else {
+            std::vector<idx_t> new_ids(list_size);
+
+            for (size_t j = 0; j < list_size; j++) {
+                new_ids[j] = ids[j] + add_id;
+            }
+            if (oivf->has_quality(0)){
+                add_entries(
+                        i, list_size, new_ids.data(), ScopedCodes(oivf, i).get(), ScopedQualities(oivf, i).get());
+            } else {
+                add_entries(
+                        i, list_size, new_ids.data(), ScopedCodes(oivf, i).get());
+            }
+        }
+        oivf->resize(i, 0);
+    }
+}
+
 ArrayInvertedLists::~ArrayInvertedLists() {}
 
 /*****************************************************************

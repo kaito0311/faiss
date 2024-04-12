@@ -63,7 +63,7 @@ struct InvertedLists {
     /// get the size of a quality list 
     virtual size_t quality_list_size(size_t list_no) const; 
 
-    /// 
+    /// function just for check code
     virtual bool get_include_quality() const; 
     virtual size_t get_quality_size() const; 
     virtual size_t get_codes_size() const; 
@@ -342,6 +342,8 @@ struct ArrayInvertedLists : InvertedLists {
     void release_qualities(size_t list_no, const uint8_t* qualities) const override;
     const uint8_t* get_single_quality(size_t list_no, size_t offset) const override;
     size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) override;
+    void merge_from(InvertedLists* oivf, size_t add_id) override;
+
         
     size_t add_entries(
             size_t list_no,
