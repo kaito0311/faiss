@@ -2178,7 +2178,9 @@ void IndexIVF::check_compatible_for_merge(const Index& otherIndex) const {
     FAISS_THROW_IF_NOT_MSG(
             this->direct_map.no() && other->direct_map.no(),
             "merge direct_map not implemented");
-
+    FAISS_THROW_IF_NOT_MSG(
+            this->invlists->get_include_quality() == other->invlists->get_include_quality(), 
+            "both index must have or have not quality");
     if (check_compatible_for_merge_expensive_check) {
         std::vector<float> v(d), v2(d);
         for (size_t i = 0; i < nlist; i++) {
@@ -2194,7 +2196,6 @@ void IndexIVF::merge_from(Index& otherIndex, idx_t add_id) {
     check_compatible_for_merge(otherIndex);
     IndexIVF* other = static_cast<IndexIVF*>(&otherIndex);
     invlists->merge_from(other->invlists, add_id);
-
     ntotal += other->ntotal;
     other->ntotal = 0;
 }

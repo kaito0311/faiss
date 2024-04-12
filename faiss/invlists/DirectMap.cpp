@@ -142,6 +142,7 @@ DirectMapAdd::~DirectMapAdd() {
 
 using ScopedCodes = InvertedLists::ScopedCodes;
 using ScopedIds = InvertedLists::ScopedIds;
+using ScopedQualities = InvertedLists::ScopedQualities;
 
 size_t DirectMap::remove_ids(const IDSelector& sel, InvertedLists* invlists) {
     size_t nlist = invlists->nlist;
@@ -158,11 +159,20 @@ size_t DirectMap::remove_ids(const IDSelector& sel, InvertedLists* invlists) {
             while (j < l) {
                 if (sel.is_member(idsi[j])) {
                     l--;
-                    invlists->update_entry(
-                            i,
-                            j,
-                            invlists->get_single_id(i, l),
-                            ScopedCodes(invlists, i, l).get());
+                    if (invlists->get_include_quality()) {
+                        invlists->update_entry(
+                                i,
+                                j,
+                                invlists->get_single_id(i, l),
+                                ScopedCodes(invlists, i, l).get(),
+                                ScopedQualities(invlists, i, l).get());
+                    } else {
+                        invlists->update_entry(
+                                i,
+                                j,
+                                invlists->get_single_id(i, l),
+                                ScopedCodes(invlists, i, l).get());
+                    }
                 } else {
                     j++;
                 }
@@ -193,11 +203,20 @@ size_t DirectMap::remove_ids(const IDSelector& sel, InvertedLists* invlists) {
                 hashtable.erase(res);
                 if (offset < last) {
                     idx_t last_id = invlists->get_single_id(list_no, last);
-                    invlists->update_entry(
-                            list_no,
-                            offset,
-                            last_id,
-                            ScopedCodes(invlists, list_no, last).get());
+                    if (invlists->get_include_quality()){
+                        invlists->update_entry(
+                                list_no,
+                                offset,
+                                last_id,
+                                ScopedCodes(invlists, list_no, last).get(),
+                                ScopedQualities(invlists, list_no, last).get());
+                    } else {
+                        invlists->update_entry(
+                                list_no,
+                                offset,
+                                last_id,
+                                ScopedCodes(invlists, list_no, last).get());
+                    }
                     // update hash entry for last element
                     hashtable[last_id] = lo_build(list_no, offset);
                 }

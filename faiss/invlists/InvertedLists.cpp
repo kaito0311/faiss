@@ -25,6 +25,8 @@ InvertedListsIterator::~InvertedListsIterator() {}
 
 InvertedLists::InvertedLists(size_t nlist, size_t code_size)
         : nlist(nlist), code_size(code_size), use_iterator(false) {}
+InvertedLists::InvertedLists(size_t nlist, size_t code_size, bool include_quaity_in)
+        : nlist(nlist), code_size(code_size), use_iterator(false), include_quality(include_quaity_in) {}
 
 InvertedLists::~InvertedLists() {}
 
@@ -59,6 +61,11 @@ size_t InvertedLists::add_entry(
         size_t list_no,
         idx_t theid,
         const uint8_t* code) {
+    
+    FAISS_THROW_IF_NOT_MSG(
+            include_quality == false, 
+            "now index has quality field, add_entry must pass quality arr"
+    );
     return add_entries(list_no, 1, &theid, code);
 }
 
@@ -86,7 +93,7 @@ size_t InvertedLists::quality_list_size(size_t list_no) const {
 }
 
 bool InvertedLists::get_include_quality() const {
-    FAISS_THROW_MSG("get_include_quality not implemented");
+    return include_quality;
 }
 size_t InvertedLists::get_quality_size() const {
     FAISS_THROW_MSG("InvertedLists::get_quality_size not implemented");
@@ -129,20 +136,36 @@ InvertedListsIterator* InvertedLists::get_iterator(size_t /*list_no*/) const {
 }
 
 void InvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
+
+    FAISS_THROW_IF_NOT_MSG(
+            this->get_include_quality() == oivf->get_include_quality(), 
+            "both invlists must has same status of include_quality");
+
 #pragma omp parallel for
     for (idx_t i = 0; i < nlist; i++) {
         size_t list_size = oivf->list_size(i);
         ScopedIds ids(oivf, i);
         if (add_id == 0) {
-            add_entries(i, list_size, ids.get(), ScopedCodes(oivf, i).get());
+            if (this->get_include_quality()){
+                add_entries(i, list_size, ids.get(), ScopedCodes(oivf, i).get(), ScopedQualities(oivf, i).get());
+            }
+            else{
+                add_entries(i, list_size, ids.get(), ScopedCodes(oivf, i).get());
+            }
         } else {
             std::vector<idx_t> new_ids(list_size);
 
             for (size_t j = 0; j < list_size; j++) {
                 new_ids[j] = ids[j] + add_id;
             }
-            add_entries(
-                    i, list_size, new_ids.data(), ScopedCodes(oivf, i).get());
+            if (this->get_include_quality()){
+                add_entries(
+                        i, list_size, new_ids.data(), ScopedCodes(oivf, i).get(), ScopedQualities(oivf, i).get());
+            }
+            else {
+                add_entries(
+                        i, list_size, new_ids.data(), ScopedCodes(oivf, i).get());
+            }
         }
         oivf->resize(i, 0);
     }
@@ -159,6 +182,11 @@ size_t InvertedLists::copy_subset_to(
             subset_type >= 0 && subset_type <= 4,
             "subset type %d not implemented",
             subset_type);
+    FAISS_THROW_IF_NOT_MSG(
+            include_quality == false,
+            "copy_subset_to only support for index which has no quality now"
+    );
+
     size_t accu_n = 0;
     size_t accu_a1 = 0;
     size_t accu_a2 = 0;
@@ -289,10 +317,10 @@ ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size)
 }
 
 ArrayInvertedLists::ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quaity_in)
-        : InvertedLists(nlist, code_size) {
+        : InvertedLists(nlist, code_size, include_quaity_in) {
     ids.resize(nlist);
     codes.resize(nlist);
-    include_quality = include_quaity_in;
+    
     if (include_quaity_in == true) {
         qualities.resize(nlist);
     }
@@ -390,7 +418,6 @@ void ArrayInvertedLists::update_entry(
         idx_t id,
         const uint8_t* code, 
         const uint8_t* quality) {
-        
     update_entries(list_no, offset, 1, &id, code, quality);
 }
 
@@ -421,6 +448,10 @@ size_t ArrayInvertedLists::add_entries(
         const uint8_t* code) {
     if (n_entry == 0)
         return 0;
+    FAISS_THROW_IF_NOT_MSG(
+            include_quality == false,
+            "add_entries without quality cause conflict, turn off include_quality or pass quality array into function"
+    );
     assert(list_no < nlist);
     size_t o = ids[list_no].size();
     ids[list_no].resize(o + n_entry);
@@ -462,6 +493,12 @@ void ArrayInvertedLists::update_entries(
         const uint8_t* codes_in) {
     assert(list_no < nlist);
     assert(n_entry + offset <= ids[list_no].size());
+    
+    FAISS_THROW_IF_NOT_MSG(
+            include_quality == false,
+            "not update quality cause conflict"
+    );
+
     memcpy(&ids[list_no][offset], ids_in, sizeof(ids_in[0]) * n_entry);
     memcpy(&codes[list_no][offset * code_size], codes_in, code_size * n_entry);
 }
@@ -490,6 +527,7 @@ void ArrayInvertedLists::permute_invlists(const idx_t* map) {
 
 
 void ArrayInvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
+    // printf("$$$$$$$$$$ call this .... ");
 #pragma omp parallel for
     for (idx_t i = 0; i < nlist; i++) {
         size_t list_size = oivf->list_size(i);
@@ -507,6 +545,7 @@ void ArrayInvertedLists::merge_from(InvertedLists* oivf, size_t add_id) {
                 new_ids[j] = ids[j] + add_id;
             }
             if (oivf->has_quality(0)){
+
                 add_entries(
                         i, list_size, new_ids.data(), ScopedCodes(oivf, i).get(), ScopedQualities(oivf, i).get());
             } else {

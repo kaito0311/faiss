@@ -38,8 +38,10 @@ struct InvertedLists {
     size_t nlist;     ///< number of possible key values
     size_t code_size; ///< code size per vector in bytes
     bool use_iterator;
+    bool include_quality = false; 
 
     InvertedLists(size_t nlist, size_t code_size);
+    InvertedLists(size_t nlist, size_t code_size, bool include_quaity_in);
 
     virtual ~InvertedLists();
 
@@ -309,7 +311,7 @@ struct ArrayInvertedLists : InvertedLists {
     // qualities array 
     std::vector<std::vector<uint8_t>> qualities; 
     static const size_t qua_size = sizeof(float); ///< size of quality
-    bool include_quality;  
+    
 
     ArrayInvertedLists(size_t nlist, size_t code_size);
     ArrayInvertedLists(size_t nlist, size_t code_size, bool include_quality);
@@ -342,7 +344,7 @@ struct ArrayInvertedLists : InvertedLists {
     void release_qualities(size_t list_no, const uint8_t* qualities) const override;
     const uint8_t* get_single_quality(size_t list_no, size_t offset) const override;
     size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) override;
-    void merge_from(InvertedLists* oivf, size_t add_id) override;
+    void merge_from(InvertedLists* oivf, size_t add_id);
 
         
     size_t add_entries(
