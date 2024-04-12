@@ -29,14 +29,18 @@ struct IndexFlatCodes : Index {
     
     /// encoded quality, size ntotal * sizeof(float)
     std::vector<uint8_t> qualities;
+    bool include_quality = false; 
 
     IndexFlatCodes();
 
     IndexFlatCodes(size_t code_size, idx_t d, MetricType metric = METRIC_L2);
+    IndexFlatCodes(size_t code_size, idx_t d, bool include_quality_in, MetricType metric = METRIC_L2);
 
     /// default add uses sa_encode
     void add(idx_t n, const float* x) override;
     void add(idx_t n, const float* x, const float* r_qua) override;
+
+    bool get_include_quality();
 
     void reset() override;
 

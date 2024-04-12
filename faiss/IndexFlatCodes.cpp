@@ -18,6 +18,10 @@ namespace faiss {
 IndexFlatCodes::IndexFlatCodes(size_t code_size, idx_t d, MetricType metric)
         : Index(d, metric), code_size(code_size) {}
 
+IndexFlatCodes::IndexFlatCodes(size_t code_size, idx_t d, bool include_quality_in, MetricType metric)
+        : Index(d, metric), code_size(code_size), include_quality(include_quality_in) {}
+
+
 IndexFlatCodes::IndexFlatCodes() : code_size(0) {}
 
 void IndexFlatCodes::add(idx_t n, const float* x, const float* r_qua) {
@@ -34,6 +38,7 @@ void IndexFlatCodes::add(idx_t n, const float* x, const float* r_qua) {
 
 void IndexFlatCodes::add(idx_t n, const float* x) {
     FAISS_THROW_IF_NOT(is_trained);
+    FAISS_THROW_IF_NOT_MSG(include_quality == false, "Index now has quality attribute, add vector without quality cause conflict");
     if (n == 0) {
         return;
     }
@@ -42,8 +47,15 @@ void IndexFlatCodes::add(idx_t n, const float* x) {
     ntotal += n;
 }
 
+bool IndexFlatCodes::get_include_quality() {
+    return include_quality;
+}
+
 void IndexFlatCodes::reset() {
     codes.clear();
+    if (get_include_quality()) {
+        qualities.clear();
+    }
     ntotal = 0;
 }
 
@@ -65,10 +77,12 @@ size_t IndexFlatCodes::remove_ids(const IDSelector& sel) {
                 memmove(&codes[code_size * j],
                         &codes[code_size * i],
                         code_size);
-                
-                memmove(&qualities[qua_size * j],
-                        &qualities[qua_size * i],
-                        qua_size);
+
+                if (get_include_quality()){
+                    memmove(&qualities[qua_size * j],
+                            &qualities[qua_size * i],
+                            qua_size);
+                }
             }
             j++;
         }
@@ -77,6 +91,10 @@ size_t IndexFlatCodes::remove_ids(const IDSelector& sel) {
     if (nremove > 0) {
         ntotal = j;
         codes.resize(ntotal * code_size);
+
+        if (get_include_quality()){
+            qualities.resize(ntotal * qua_size);
+        }
     }
     return nremove;
 }
@@ -106,6 +124,11 @@ void IndexFlatCodes::check_compatible_for_merge(const Index& otherIndex) const {
     FAISS_THROW_IF_NOT_MSG(
             typeid(*this) == typeid(*other),
             "can only merge indexes of the same type");
+    
+    FAISS_THROW_IF_NOT_MSG(
+            include_quality == other->include_quality,
+            "both index must have same include_quality status"
+    );
 }
 
 void IndexFlatCodes::merge_from(Index& otherIndex, idx_t add_id) {
@@ -117,7 +140,7 @@ void IndexFlatCodes::merge_from(Index& otherIndex, idx_t add_id) {
            other->codes.data(),
            other->ntotal * code_size); 
 
-    if (qualities.size() > 0) {
+    if (get_include_quality()) {
         if (other->qualities.size() > 0) {
             qualities.resize((ntotal + other->ntotal) * qua_size); /// resize qualtity array
             memcpy(qualities.data() + (ntotal * qua_size), 
@@ -131,6 +154,7 @@ void IndexFlatCodes::merge_from(Index& otherIndex, idx_t add_id) {
 }
 
 CodePacker* IndexFlatCodes::get_CodePacker() const {
+    FAISS_THROW_IF_NOT_MSG(include_quality == false, "get_CodePacker for IndexFlatCodes not support for quality now");
     return new CodePackerFlat(code_size);
 }
 
@@ -142,14 +166,18 @@ void IndexFlatCodes::permute_entries(const idx_t* perm) {
         memcpy(new_codes.data() + i * code_size,
                codes.data() + perm[i] * code_size,
                code_size);
-
-        memcpy(new_qualities.data() + i * qua_size, 
-                qualities.data() + perm[i] * qua_size,
-                qua_size);
+        if (get_include_quality()){
+            memcpy(new_qualities.data() + i * qua_size, 
+                    qualities.data() + perm[i] * qua_size,
+                    qua_size);
+        }
 
     }
     std::swap(codes, new_codes);
-    std::swap(qualities, new_qualities);
+
+    if (get_include_quality()){
+        std::swap(qualities, new_qualities);
+    }
 }
 
 } // namespace faiss

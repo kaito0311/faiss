@@ -21,6 +21,10 @@ struct IndexFlat : IndexFlatCodes {
     explicit IndexFlat(
             idx_t d, ///< dimensionality of the input vectors
             MetricType metric = METRIC_L2);
+    explicit IndexFlat(
+            idx_t d, ///< dimensionality of the input vectors
+            bool include_quality_in,
+            MetricType metric = METRIC_L2);
 
     void search(
             idx_t n,

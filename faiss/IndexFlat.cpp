@@ -24,6 +24,9 @@ namespace faiss {
 IndexFlat::IndexFlat(idx_t d, MetricType metric)
         : IndexFlatCodes(sizeof(float) * d, d, metric) {}
 
+IndexFlat::IndexFlat(idx_t d, bool include_quality, MetricType metric)
+        : IndexFlatCodes(sizeof(float) * d, d, include_quality, metric) {}
+
 void IndexFlat::search(
         idx_t n,
         const float* x,
