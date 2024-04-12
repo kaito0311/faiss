@@ -26,6 +26,7 @@ IndexFlatCodes::IndexFlatCodes() : code_size(0) {}
 
 void IndexFlatCodes::add(idx_t n, const float* x, const float* r_qua) {
     FAISS_THROW_IF_NOT(is_trained);
+    FAISS_THROW_IF_NOT_MSG(include_quality, "include_quality is current false");
     if (n == 0) {
         return;
     }
@@ -108,6 +109,16 @@ void IndexFlatCodes::reconstruct(idx_t key, float* recons) const {
     reconstruct_n(key, 1, recons);
 }
 
+void IndexFlatCodes::reconstruct_qua_n(idx_t i0, idx_t ni, float* qua_recons) const {
+    FAISS_THROW_IF_NOT(ni == 0 || (i0 >= 0 && i0 + ni <= ntotal));
+    FAISS_THROW_IF_NOT(include_quality); 
+    sa_qua_decode(ni, qualities.data() + i0 * qua_size, qua_recons);
+}
+
+void IndexFlatCodes::reconstruct_qua(idx_t key, float* qua_recons) const { 
+    reconstruct_qua_n(key, 1, qua_recons);
+}
+
 FlatCodesDistanceComputer* IndexFlatCodes::get_FlatCodesDistanceComputer()
         const {
     FAISS_THROW_MSG("not implemented");
@@ -147,7 +158,9 @@ void IndexFlatCodes::merge_from(Index& otherIndex, idx_t add_id) {
                 other->qualities.data(),
                 other->ntotal * qua_size);
         }
-        FAISS_THROW_MSG("otherIndex not has quality array, please update it");
+        else {
+            FAISS_THROW_MSG("otherIndex not has quality array, please update it");
+        }
     }
     ntotal += other->ntotal;
     other->reset();

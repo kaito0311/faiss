@@ -117,7 +117,9 @@ void IndexFlat::search_with_quality(
     IDSelector* sel = params ? params->sel : nullptr;
     FAISS_THROW_IF_NOT(k > 0);
 
+    FAISS_THROW_IF_NOT(include_quality == true);
     FAISS_THROW_IF_NOT(int(ntotal * qua_size) == qualities.size()); /// Check size of quality
+
 
     // we see the distances and labels as heaps
     if (metric_type == METRIC_INNER_PRODUCT){

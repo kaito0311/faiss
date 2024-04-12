@@ -48,6 +48,10 @@ struct IndexFlatCodes : Index {
 
     void reconstruct(idx_t key, float* recons) const override;
 
+    void reconstruct_qua_n(idx_t i0, idx_t ni, float* qua_recons) const override;
+
+    void reconstruct_qua(idx_t key, float* qua_recons) const override;
+
     size_t sa_code_size() const override;
 
     size_t sa_qua_code_size() const override;

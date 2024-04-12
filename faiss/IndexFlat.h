@@ -113,6 +113,7 @@ struct IndexFlat : IndexFlatCodes {
 
 struct IndexFlatIP : IndexFlat {
     explicit IndexFlatIP(idx_t d) : IndexFlat(d, METRIC_INNER_PRODUCT) {}
+    explicit IndexFlatIP(idx_t d, bool include_quality_in) : IndexFlat(d, include_quality_in, METRIC_INNER_PRODUCT) {}
     IndexFlatIP() {}
 };
 
@@ -127,6 +128,7 @@ struct IndexFlatL2 : IndexFlat {
      * @param d dimensionality of the input vectors
      */
     explicit IndexFlatL2(idx_t d) : IndexFlat(d, METRIC_L2) {}
+    explicit IndexFlatL2(idx_t d, bool include_quality_in) : IndexFlat(d, include_quality_in, METRIC_L2) {}
     IndexFlatL2() {}
 
     // override for l2 norms cache.

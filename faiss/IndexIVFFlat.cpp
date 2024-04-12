@@ -110,6 +110,8 @@ void IndexIVFFlat::add_core(
     FAISS_THROW_IF_NOT(!by_residual);
     assert(invlists);
     FAISS_THROW_IF_NOT(invlists->has_quality(0));
+    FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to add_core with quality array");
+
     direct_map.check_can_add(xids);
 
     int64_t n_add = 0;

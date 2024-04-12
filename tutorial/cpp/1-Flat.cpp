@@ -73,24 +73,28 @@ int main() {
 
 
 
-
-
-
     // faiss::IndexFlatIP index(d); // call constructor
-    faiss::IndexFlatL2 index(d); // call constructor
+    faiss::IndexFlatL2 index(d, true); // call constructor
+    faiss::IndexFlatL2 index2(d, true); // call constructor
     printf("is_trained = %s\n", index.is_trained ? "true" : "false");
     // index.add(nb, xb); // add vectors to the index
     index.add(nb, xb, r_qua);
+    index2.add(nb, xb, r_qua);
+    printf("%ld ", index.ntotal);
     printf("ntotal = %zd\n", index.ntotal);
-    printf("%ld ", index.qua_size);
 
     
+
+    /* Check merge and reset function */
+    index.merge_from(index2, 0); 
+
     /* Check reconstruct vector*/
 
     float* resconstruc_vector = new float[nb]; 
 
     // index.sa_decode(1, index.codes.data() + 0 * index.code_size, resconstruc_vector_2);
-    index.sa_qua_decode(nb, index.qualities.data(), resconstruc_vector);
+    // index.sa_qua_decode(nb, index.qualities.data(), resconstruc_vector);
+    index.reconstruct_qua_n(0, nb, resconstruc_vector);
 
     for (int i = 0; i < 10; i++) {
         printf("%f %f\n", resconstruc_vector[i], r_qua[i]);
@@ -120,7 +124,7 @@ int main() {
     }
     std::cout << std::endl;
 
-    int k = 1;
+    int k = 5;
 
     { // sanity check: search 5 first vectors of xb
         idx_t* I = new idx_t[k * 5];

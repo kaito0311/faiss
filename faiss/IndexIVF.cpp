@@ -200,6 +200,7 @@ void IndexIVF::add(idx_t n, const float* x) {
 }
 
 void IndexIVF::add(idx_t n, const float* x, const float* r_qua) {
+    FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to add with quality array");
     add_with_ids(n, x, r_qua, nullptr);
 }
 
@@ -210,6 +211,7 @@ void IndexIVF::add_with_ids(idx_t n, const float* x, const idx_t* xids) {
 }
 
 void IndexIVF::add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids) {
+    FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to add with quality array");
     std::unique_ptr<idx_t[]> coarse_idx(new idx_t[n]);
     quantizer->assign(n, x, coarse_idx.get()); // return coarse_idx : ID cluster quantizer
     add_core(n, x, r_qua, xids, coarse_idx.get());
@@ -309,6 +311,8 @@ void IndexIVF::add_core(
         const float* r_qua,
         const idx_t* xids,
         const idx_t* coarse_idx) {
+
+    
     // do some blocking to avoid excessive allocs
     idx_t bs = 65536;
     if (n > bs) {
@@ -328,6 +332,8 @@ void IndexIVF::add_core(
         }
         return;
     }
+
+    FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to add_core with quality array");
     FAISS_THROW_IF_NOT(coarse_idx);
     FAISS_THROW_IF_NOT(is_trained);
     direct_map.check_can_add(xids);
@@ -511,6 +517,8 @@ void IndexIVF::search_with_quality(
         idx_t* labels, 
         const SearchParameters* params_in) const {
     FAISS_THROW_IF_NOT(k > 0);
+    FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to search with quality array");
+
     const IVFSearchParameters* params = nullptr;
     if (params_in) {
         params = dynamic_cast<const IVFSearchParameters*>(params_in);
@@ -946,7 +954,7 @@ void IndexIVF::search_preassigned_with_quality(
         const IVFSearchParameters* params,
         IndexIVFStats* ivf_stats) const {
     FAISS_THROW_IF_NOT(k > 0);
-
+    FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "current include_quality must be true");
     idx_t nprobe = params ? params->nprobe : this->nprobe;
     nprobe = std::min((idx_t)nlist, nprobe);
     FAISS_THROW_IF_NOT(nprobe > 0);
