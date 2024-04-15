@@ -199,9 +199,9 @@ void IndexIVF::add(idx_t n, const float* x) {
     add_with_ids(n, x, nullptr);
 }
 
-void IndexIVF::add(idx_t n, const float* x, const float* r_qua) {
+void IndexIVF::add_with_quality(idx_t n, const float* x, const float* r_qua) {
     FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to add with quality array");
-    add_with_ids(n, x, r_qua, nullptr);
+    add_with_ids_with_quality(n, x, r_qua, nullptr);
 }
 
 void IndexIVF::add_with_ids(idx_t n, const float* x, const idx_t* xids) {
@@ -210,11 +210,11 @@ void IndexIVF::add_with_ids(idx_t n, const float* x, const idx_t* xids) {
     add_core(n, x, xids, coarse_idx.get());
 }
 
-void IndexIVF::add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids) {
+void IndexIVF::add_with_ids_with_quality(idx_t n, const float* x, const float* r_qua, const idx_t* xids) {
     FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to add with quality array");
     std::unique_ptr<idx_t[]> coarse_idx(new idx_t[n]);
     quantizer->assign(n, x, coarse_idx.get()); // return coarse_idx : ID cluster quantizer
-    add_core(n, x, r_qua, xids, coarse_idx.get());
+    add_core_with_quality(n, x, r_qua, xids, coarse_idx.get());
 }
 
 void IndexIVF::add_sa_codes(idx_t n, const uint8_t* codes, const idx_t* xids) {
@@ -305,7 +305,7 @@ void IndexIVF::add_core(
     ntotal += n;
 }
 
-void IndexIVF::add_core(
+void IndexIVF::add_core_with_quality(
         idx_t n,
         const float* x,
         const float* r_qua,
@@ -323,7 +323,7 @@ void IndexIVF::add_core(
                        i0,
                        i1);
             }
-            add_core(
+            add_core_with_quality(
                     i1 - i0,
                     x + i0 * d,
                     r_qua + i0,
@@ -347,7 +347,7 @@ void IndexIVF::add_core(
 
     std::unique_ptr<uint8_t[]> flat_codes(new uint8_t[n * code_size]);
     std::unique_ptr<uint8_t[]> flat_qualities(new uint8_t[n * qua_size]);
-    encode_vectors(n, x, r_qua, coarse_idx, flat_codes.get(), flat_qualities.get()); // move data from x to flat codes, can encode list_no to if needed
+    encode_vectors_with_quality(n, x, r_qua, coarse_idx, flat_codes.get(), flat_qualities.get()); // move data from x to flat codes, can encode list_no to if needed
 
 
     DirectMapAdd dm_adder(direct_map, n, xids);
@@ -362,7 +362,7 @@ void IndexIVF::add_core(
             idx_t list_no = coarse_idx[i];
             if (list_no >= 0 && list_no % nt == rank) {
                 idx_t id = xids ? xids[i] : ntotal + i;
-                size_t ofs = invlists->add_entry(
+                size_t ofs = invlists->add_entry_with_quality(
                         list_no, id, flat_codes.get() + i * code_size, flat_qualities.get() + i * qua_size);
 
                 dm_adder.add(i, list_no, ofs);
@@ -384,7 +384,7 @@ void IndexIVF::add_core(
     ntotal += n;
 }
 
-void IndexIVF::encode_vectors(
+void IndexIVF::encode_vectors_with_quality(
         idx_t /*n*/, 
         const float* /*x*/, 
         const float* /*r_qua*/, 

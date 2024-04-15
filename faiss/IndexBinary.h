@@ -61,7 +61,7 @@ struct IndexBinary {
      * @param x      input matrix, size n * d / 8
      */
     virtual void add(idx_t n, const uint8_t* x) = 0;
-    virtual void add(idx_t n, const uint8_t* x, const uint8_t* r_qua);
+    virtual void add_with_quality(idx_t n, const uint8_t* x, const uint8_t* r_qua);
 
     /** Same as add, but stores xids instead of sequential ids.
      *
@@ -71,7 +71,7 @@ struct IndexBinary {
      * @param xids if non-null, ids to store for the vectors (size n)
      */
     virtual void add_with_ids(idx_t n, const uint8_t* x, const idx_t* xids);
-    virtual void add_with_ids(idx_t n, const uint8_t* x, const uint8_t* r_qua, const idx_t* xids);
+    virtual void add_with_ids_with_quality(idx_t n, const uint8_t* x, const uint8_t* r_qua, const idx_t* xids);
 
     /** Query n vectors of dimension d to the index.
      *

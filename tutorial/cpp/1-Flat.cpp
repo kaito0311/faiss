@@ -85,12 +85,12 @@ int main() {
     printf("ntotal = %zd\n", index.ntotal);
 
     
-    /* Test index write*/ 
-    {
+    // /* Test index write*/ 
+    // {
 
-        write_index(&index, "./indexflat.bin");
-        return 0; 
-    }
+    //     write_index(&index, "./indexflat.bin");
+    //     return 0; 
+    // }
 
     /* Check merge and reset function */
     index.merge_from(index2, 0); 

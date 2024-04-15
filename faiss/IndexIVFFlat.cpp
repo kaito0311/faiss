@@ -99,7 +99,7 @@ void IndexIVFFlat::add_core(
     ntotal += n;
 }
 
-void IndexIVFFlat::add_core(
+void IndexIVFFlat::add_core_with_quality(
         idx_t n,
         const float* x,
         const float* r_qua,
@@ -132,7 +132,7 @@ void IndexIVFFlat::add_core(
                 const float* xi = x + i * d;
                 const float* r_qua_i = r_qua + i * 1; 
                 size_t offset =
-                        invlists->add_entry(list_no, id, (const uint8_t*)xi, (const uint8_t*)r_qua_i);
+                        invlists->add_entry_with_quality(list_no, id, (const uint8_t*)xi, (const uint8_t*)r_qua_i);
                 dm_adder.add(i, list_no, offset);
                 n_add++;
             } else if (rank == 0 && list_no == -1) {

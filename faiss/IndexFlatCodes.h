@@ -38,7 +38,7 @@ struct IndexFlatCodes : Index {
 
     /// default add uses sa_encode
     void add(idx_t n, const float* x) override;
-    void add(idx_t n, const float* x, const float* r_qua) override;
+    void add_with_quality(idx_t n, const float* x, const float* r_qua) override;
 
     bool get_include_quality();
 

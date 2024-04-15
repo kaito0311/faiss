@@ -24,7 +24,7 @@ IndexFlatCodes::IndexFlatCodes(size_t code_size, idx_t d, bool include_quality_i
 
 IndexFlatCodes::IndexFlatCodes() : code_size(0) {}
 
-void IndexFlatCodes::add(idx_t n, const float* x, const float* r_qua) {
+void IndexFlatCodes::add_with_quality(idx_t n, const float* x, const float* r_qua) {
     FAISS_THROW_IF_NOT(is_trained);
     FAISS_THROW_IF_NOT_MSG(include_quality, "include_quality is current false");
     if (n == 0) {

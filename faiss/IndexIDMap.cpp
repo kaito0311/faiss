@@ -58,7 +58,7 @@ void IndexIDMapTemplate<IndexT>::add(
 }
 
 template <typename IndexT>
-void IndexIDMapTemplate<IndexT>::add(
+void IndexIDMapTemplate<IndexT>::add_with_quality(
         idx_t,
         const typename IndexT::component_t*,
         const typename IndexT::component_t*) {
@@ -94,12 +94,12 @@ void IndexIDMapTemplate<IndexT>::add_with_ids(
 }
 
 template <typename IndexT>
-void IndexIDMapTemplate<IndexT>::add_with_ids(
+void IndexIDMapTemplate<IndexT>::add_with_ids_with_quality(
         idx_t n,
         const typename IndexT::component_t* x,
         const typename IndexT::component_t* r_qua,
         const idx_t* xids) {
-    index->add(n, x, r_qua);
+    index->add_with_quality(n, x, r_qua);
     for (idx_t i = 0; i < n; i++)
         id_map.push_back(xids[i]);
     this->ntotal = index->ntotal;

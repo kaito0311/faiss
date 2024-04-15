@@ -125,7 +125,7 @@ struct InvertedLists {
     virtual size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code);
     
     /// add one entry to an inverted list with quality
-    virtual size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality);
+    virtual size_t add_entry_with_quality(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality);
 
     virtual size_t add_entries(
             size_t list_no,
@@ -134,7 +134,7 @@ struct InvertedLists {
             const uint8_t* code) = 0;
 
     /// add entries with qualities
-    virtual size_t add_entries(
+    virtual size_t add_entries_with_quality(
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
@@ -147,7 +147,7 @@ struct InvertedLists {
             idx_t id,
             const uint8_t* code);
 
-    virtual void update_entry(
+    virtual void update_entry_with_quality(
             size_t list_no,
             size_t offset,
             idx_t id,
@@ -161,7 +161,7 @@ struct InvertedLists {
             const idx_t* ids,
             const uint8_t* code) = 0;
 
-    virtual void update_entries(
+    virtual void update_entries_with_quality(
             size_t list_no,
             size_t offset,
             size_t n_entry,
@@ -343,23 +343,23 @@ struct ArrayInvertedLists : InvertedLists {
     const uint8_t* get_qualities(size_t list_no) const override;
     void release_qualities(size_t list_no, const uint8_t* qualities) const override;
     const uint8_t* get_single_quality(size_t list_no, size_t offset) const override;
-    size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) override;
+    size_t add_entry_with_quality(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) override;
     void merge_from(InvertedLists* oivf, size_t add_id);
 
         
-    size_t add_entries(
+    size_t add_entries_with_quality(
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
             const uint8_t* code,
             const uint8_t* quality) override;
-    void update_entry(
+    void update_entry_with_quality(
             size_t list_no,
             size_t offset,
             idx_t id,
             const uint8_t* code, 
             const uint8_t* quality) override;
-    void update_entries(
+    void update_entries_with_quality(
             size_t list_no,
             size_t offset,
             size_t n_entry,

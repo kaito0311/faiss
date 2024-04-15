@@ -306,13 +306,13 @@ struct IndexIVF : Index, IndexIVFInterface {
     void add(idx_t n, const float* x) override;
 
     /// Calls add_with_ids with NULL ids
-    void add(idx_t n, const float* x, const float* r_qua) override; 
+    void add_with_quality(idx_t n, const float* x, const float* r_qua) override; 
 
     /// default implementation that calls encode_vectors
     void add_with_ids(idx_t n, const float* x, const idx_t* xids) override;
 
     /// default implementation that calls encode_vectors
-    void add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids) override;
+    void add_with_ids_with_quality(idx_t n, const float* x, const float* r_qua, const idx_t* xids) override;
 
     /** Implementation of vector addition where the vector assignments are
      * predefined. The default implementation hands over the code extraction to
@@ -334,7 +334,7 @@ struct IndexIVF : Index, IndexIVFInterface {
      * @param precomputed_idx    quantization indices for the input vectors
      * (size n)
      */
-    virtual void add_core(
+    virtual void add_core_with_quality(
             idx_t n,
             const float* x,
             const float* r_qua,
@@ -367,7 +367,7 @@ struct IndexIVF : Index, IndexIVFInterface {
      *                   include the list ids in the code (in this case add
      *                   ceil(log8(nlist)) to the code size)
      */
-    virtual void encode_vectors(
+    virtual void encode_vectors_with_quality(
             idx_t n,
             const float* x,
             const float* r_qua,

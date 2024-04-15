@@ -40,7 +40,7 @@ struct IndexIVFFlat : IndexIVF {
             const idx_t* xids,
             const idx_t* precomputed_idx) override;
 
-    void add_core(
+    void add_core_with_quality(
             idx_t n,
             const float* x,
             const float* r_qua,

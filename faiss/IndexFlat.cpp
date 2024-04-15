@@ -471,8 +471,8 @@ void IndexFlat1D::update_permutation() {
     }
 }
 
-void IndexFlat1D::add(idx_t n, const float* x, const float* r_qua) {
-    IndexFlatL2::add(n, x, r_qua);
+void IndexFlat1D::add_with_quality(idx_t n, const float* x, const float* r_qua) {
+    IndexFlatL2::add_with_quality(n, x, r_qua);
     if (continuous_update)
         update_permutation();
 }

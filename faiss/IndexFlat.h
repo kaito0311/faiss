@@ -153,7 +153,7 @@ struct IndexFlat1D : IndexFlatL2 {
     void update_permutation();
 
     void add(idx_t n, const float* x) override;
-    void add(idx_t n, const float* x, const float* r_qua) override;
+    void add_with_quality(idx_t n, const float* x, const float* r_qua) override;
 
     void reset() override;
 

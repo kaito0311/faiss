@@ -386,7 +386,7 @@ void IndexIVFScalarQuantizer::add_core(
     ntotal += n;
 }
 
-void IndexIVFScalarQuantizer::add_core(
+void IndexIVFScalarQuantizer::add_core_with_quality(
         idx_t n,
         const float* x,
         const float* r_qua,
@@ -425,7 +425,7 @@ void IndexIVFScalarQuantizer::add_core(
                 memset(one_code.data(), 0, code_size);
                 squant->encode_vector(xi, one_code.data());
 
-                size_t ofs = invlists->add_entry(list_no, id, one_code.data(), (const uint8_t*)r_qua_i);
+                size_t ofs = invlists->add_entry_with_quality(list_no, id, one_code.data(), (const uint8_t*)r_qua_i);
 
                 dm_add.add(i, list_no, ofs);
                 nadd++;

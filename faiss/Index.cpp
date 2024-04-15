@@ -64,7 +64,7 @@ void Index::assign(idx_t n, const float* x, idx_t* labels, idx_t k) const {
     search(n, x, k, distances.data(), labels);
 }
 
-void Index::add(
+void Index::add_with_quality(
     idx_t /*n*/,
     const float* /*x*/,
     const float* /*r_qua*/) {
@@ -78,7 +78,7 @@ void Index::add_with_ids(
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
 }
 
-void Index::add_with_ids(
+void Index::add_with_ids_with_quality(
         idx_t /*n*/,
         const float* /*x*/,
         const float* /*r_qua*/,
