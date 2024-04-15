@@ -21,3 +21,7 @@ target_link_libraries(5-Multiple-GPUs PRIVATE faiss)
 
 add_executable(6-Testing-tm EXCLUDE_FROM_ALL 6-Testing-tm.cpp)
 target_link_libraries(6-Testing-tm PRIVATE faiss)
+
+add_executable(7-Read_write_index EXCLUDE_FROM_ALL 7-Read_write_index.cpp)
+target_link_libraries(7-Read_write_index PRIVATE faiss)
+

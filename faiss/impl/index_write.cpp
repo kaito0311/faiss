@@ -289,8 +289,10 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
             if (n > 0) {
                 WRITEANDCHECK(ails->codes[i].data(), n * ails->code_size);
                 WRITEANDCHECK(ails->ids[i].data(), n);
+                WRITEANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
             }
         }
+        WRITE1(ails->include_quality);
 
     } else {
         InvertedListsIOHook::lookup_classname(typeid(*ils).name())
@@ -603,6 +605,8 @@ void write_index(const Index* idx, IOWriter* f) {
         write_index_header(idx, f);
         write_ScalarQuantizer(&idxs->sq, f);
         WRITEVECTOR(idxs->codes);
+        WRITEVECTOR(idxs->qualities);
+        WRITE1(idxs->include_quality);
     } else if (
             const IndexLattice* idxl = dynamic_cast<const IndexLattice*>(idx)) {
         uint32_t h = fourcc("IxLa");

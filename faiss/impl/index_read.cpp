@@ -200,19 +200,29 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
         READ1(ails->code_size);
         ails->ids.resize(ails->nlist);
         ails->codes.resize(ails->nlist);
+        ails->qualities.resize(ails->nlist);
         std::vector<size_t> sizes(ails->nlist);
         read_ArrayInvertedLists_sizes(f, sizes);
         for (size_t i = 0; i < ails->nlist; i++) {
             ails->ids[i].resize(sizes[i]);
             ails->codes[i].resize(sizes[i] * ails->code_size);
+            ails->qualities[i].resize(sizes[i] * ails->qua_size);
         }
         for (size_t i = 0; i < ails->nlist; i++) {
             size_t n = ails->ids[i].size();
             if (n > 0) {
                 READANDCHECK(ails->codes[i].data(), n * ails->code_size);
                 READANDCHECK(ails->ids[i].data(), n);
+                READANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
             }
         }
+
+        READ1(ails->include_quality);
+
+        if (ails->include_quality == false) { 
+            ails->qualities.resize(0);
+        }
+
         return ails;
 
     } else if (h == fourcc("ilar") && (io_flags & IO_FLAG_SKIP_IVF_DATA)) {
@@ -548,6 +558,8 @@ Index* read_index(IOReader* f, int io_flags) {
         READXBVECTOR(idxf->codes);
         FAISS_THROW_IF_NOT(
                 idxf->codes.size() == idxf->ntotal * idxf->code_size);
+        READXBVECTOR(idxf->qualities); 
+        READ1(idxf->include_quality);
         // leak!
         idx = idxf;
     } else if (h == fourcc("IxHE") || h == fourcc("IxHe")) {
@@ -790,6 +802,8 @@ Index* read_index(IOReader* f, int io_flags) {
         read_index_header(idxs, f);
         read_ScalarQuantizer(&idxs->sq, f);
         READVECTOR(idxs->codes);
+        READVECTOR(idxs->qualities);
+        READ1(idxs->include_quality);
         idxs->code_size = idxs->sq.code_size;
         idx = idxs;
     } else if (h == fourcc("IxLa")) {
