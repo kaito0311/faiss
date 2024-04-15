@@ -80,8 +80,8 @@ int main() {
 
 
     // index.check_compatible_for_merge(index1);
-    printf("ntotal: %d \n", index.ntotal);
-    index.merge_from(index1, index.ntotal); 
+    // printf("ntotal: %d \n", index.ntotal);
+    // index.merge_from(index1, index.ntotal); 
 
     // for (int i = 0; i < nlist; i++){
     //     printf("list size of codes in cluster 0: %ld\n", index.invlists->list_size(i));

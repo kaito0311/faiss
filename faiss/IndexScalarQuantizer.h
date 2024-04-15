@@ -37,6 +37,12 @@ struct IndexScalarQuantizer : IndexFlatCodes {
             ScalarQuantizer::QuantizerType qtype,
             MetricType metric = METRIC_L2);
 
+    IndexScalarQuantizer(
+            int d,
+            bool include_quality_in,
+            ScalarQuantizer::QuantizerType qtype,
+            MetricType metric = METRIC_L2);
+
     IndexScalarQuantizer();
 
     void train(idx_t n, const float* x) override;
@@ -96,6 +102,15 @@ struct IndexIVFScalarQuantizer : IndexIVF {
             Index* quantizer,
             size_t d,
             size_t nlist,
+            ScalarQuantizer::QuantizerType qtype,
+            MetricType metric = METRIC_L2,
+            bool by_residual = true);
+
+    IndexIVFScalarQuantizer(
+            Index* quantizer,
+            size_t d,
+            size_t nlist,
+            bool include_quality_in,
             ScalarQuantizer::QuantizerType qtype,
             MetricType metric = METRIC_L2,
             bool by_residual = true);

@@ -22,4 +22,4 @@ make -C build 2-IVFFlat
 ./build/tutorial/cpp/6-Testing-tm 
 make -C build 1-Flat && ./build/tutorial/cpp/1-Flat
 make -C build 2-IVFFlat && ./build/tutorial/cpp/2-IVFFlat
-make -C build 3-IVFPQ && ./build/tutorial/cpp/3-IVFPQ
+make -C build 6-Testing-tm && ./build/tutorial/cpp/6-Testing-tm

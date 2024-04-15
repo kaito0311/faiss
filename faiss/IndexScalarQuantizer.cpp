@@ -35,6 +35,16 @@ IndexScalarQuantizer::IndexScalarQuantizer(
             qtype == ScalarQuantizer::QT_8bit_direct;
     code_size = sq.code_size;
 }
+IndexScalarQuantizer::IndexScalarQuantizer(
+        int d,
+        bool include_quality_in,
+        ScalarQuantizer::QuantizerType qtype,
+        MetricType metric)
+        : IndexFlatCodes(0, d, include_quality_in, metric), sq(d, qtype) {
+    is_trained = qtype == ScalarQuantizer::QT_fp16 ||
+            qtype == ScalarQuantizer::QT_8bit_direct;
+    code_size = sq.code_size;
+}
 
 IndexScalarQuantizer::IndexScalarQuantizer()
         : IndexScalarQuantizer(0, ScalarQuantizer::QT_8bit) {}
@@ -232,6 +242,22 @@ IndexIVFScalarQuantizer::IndexIVFScalarQuantizer(
         MetricType metric,
         bool by_residual)
         : IndexIVF(quantizer, d, nlist, 0, metric), sq(d, qtype) {
+    code_size = sq.code_size;
+    this->by_residual = by_residual;
+    // was not known at construction time
+    invlists->code_size = code_size;
+    is_trained = false;
+}
+
+IndexIVFScalarQuantizer::IndexIVFScalarQuantizer(
+        Index* quantizer,
+        size_t d,
+        size_t nlist,
+        bool include_quality,
+        ScalarQuantizer::QuantizerType qtype,
+        MetricType metric,
+        bool by_residual)
+        : IndexIVF(quantizer, d, nlist, 0, include_quality, metric), sq(d, qtype) {
     code_size = sq.code_size;
     this->by_residual = by_residual;
     // was not known at construction time
