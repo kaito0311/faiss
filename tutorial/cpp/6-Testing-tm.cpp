@@ -16,6 +16,9 @@ using idx_t = faiss::idx_t;
 
 int main(){
 
+
+
+
     int d = 64;      // dimension
     int nb = 10000; // database size
     int nq = 1000;  // nb of queries

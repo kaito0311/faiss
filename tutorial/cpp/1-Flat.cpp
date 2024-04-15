@@ -10,6 +10,7 @@
 #include <random>
 #include <iostream>
 #include <faiss/IndexFlat.h>
+#include <faiss/impl/index_write.cpp>
 
 // 64-bit int
 using idx_t = faiss::idx_t;
@@ -186,6 +187,8 @@ int main() {
         delete[] I;
         delete[] D;
     }
+
+
 
     // { // search xq
     //     idx_t* I = new idx_t[k * nq];

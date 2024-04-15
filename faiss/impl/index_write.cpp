@@ -401,6 +401,9 @@ void write_index(const Index* idx, IOWriter* f) {
         WRITE1(h);
         write_index_header(idx, f);
         WRITEXBVECTOR(idxf->codes);
+        WRITEXBVECTOR(idxf->qualities);
+        WRITE1(idxf->include_quality);
+
     } else if (const IndexLSH* idxl = dynamic_cast<const IndexLSH*>(idx)) {
         uint32_t h = fourcc("IxHe");
         WRITE1(h);
