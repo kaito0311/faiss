@@ -31,9 +31,12 @@ struct IndexIDMapTemplate : IndexT {
     /// @param xids if non-null, ids to store for the vectors (size n)
     void add_with_ids(idx_t n, const component_t* x, const idx_t* xids)
             override;
+    void add_with_ids(idx_t n, const component_t* x, const component_t* r_qua, const idx_t* xids)
+            override;
 
     /// this will fail. Use add_with_ids
     void add(idx_t n, const component_t* x) override;
+    void add(idx_t n, const component_t* x, const component_t* r_qua) override;
 
     void search(
             idx_t n,
@@ -51,6 +54,16 @@ struct IndexIDMapTemplate : IndexT {
             const distance_t upper,
             const distance_t duplicate_thr,
             const bool rm_duplicate,
+            distance_t* distances,
+            idx_t* labels,
+            const SearchParameters* params = nullptr) const override;
+
+    void search_with_quality(
+            idx_t n,
+            const component_t* x,
+            idx_t k,
+            const distance_t lower_quality,
+            const distance_t upper_quality,
             distance_t* distances,
             idx_t* labels,
             const SearchParameters* params = nullptr) const override;

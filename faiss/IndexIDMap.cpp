@@ -58,6 +58,16 @@ void IndexIDMapTemplate<IndexT>::add(
 }
 
 template <typename IndexT>
+void IndexIDMapTemplate<IndexT>::add(
+        idx_t,
+        const typename IndexT::component_t*,
+        const typename IndexT::component_t*) {
+    FAISS_THROW_MSG(
+            "add does not make sense with IndexIDMap, "
+            "use add_with_ids");
+}
+
+template <typename IndexT>
 void IndexIDMapTemplate<IndexT>::train(
         idx_t n,
         const typename IndexT::component_t* x) {
@@ -78,6 +88,18 @@ void IndexIDMapTemplate<IndexT>::add_with_ids(
         const typename IndexT::component_t* x,
         const idx_t* xids) {
     index->add(n, x);
+    for (idx_t i = 0; i < n; i++)
+        id_map.push_back(xids[i]);
+    this->ntotal = index->ntotal;
+}
+
+template <typename IndexT>
+void IndexIDMapTemplate<IndexT>::add_with_ids(
+        idx_t n,
+        const typename IndexT::component_t* x,
+        const typename IndexT::component_t* r_qua,
+        const idx_t* xids) {
+    index->add(n, x, r_qua);
     for (idx_t i = 0; i < n; i++)
         id_map.push_back(xids[i]);
     this->ntotal = index->ntotal;
@@ -132,6 +154,43 @@ void IndexIDMapTemplate<IndexT>::search(
         }
     }
     index->search(n, x, k, distances, labels, params);
+    idx_t* li = labels;
+#pragma omp parallel for
+    for (idx_t i = 0; i < n * k; i++) {
+        li[i] = li[i] < 0 ? li[i] : id_map[li[i]];
+    }
+}
+
+template <typename IndexT>
+void IndexIDMapTemplate<IndexT>::search_with_quality(
+        idx_t n,
+        const typename IndexT::component_t* x,
+        idx_t k,
+        const typename IndexT::distance_t lower_quality,
+        const typename IndexT::distance_t upper_quality,
+        typename IndexT::distance_t* distances,
+        idx_t* labels,
+        const SearchParameters* params) const {
+    IDSelectorTranslated this_idtrans(this->id_map, nullptr);
+    ScopedSelChange sel_change;
+
+    if (params && params->sel) {
+        auto idtrans = dynamic_cast<const IDSelectorTranslated*>(params->sel);
+
+        if (!idtrans) {
+            /*
+            FAISS_THROW_IF_NOT_MSG(
+                    idtrans,
+                    "IndexIDMap requires an IDSelectorTranslated on input");
+            */
+            // then make an idtrans and force it into the SearchParameters
+            // (hence the const_cast)
+            auto params_non_const = const_cast<SearchParameters*>(params);
+            this_idtrans.sel = params->sel;
+            sel_change.set(params_non_const, &this_idtrans);
+        }
+    }
+    index->search_with_quality(n, x, k, lower_quality, upper_quality, distances, labels, params);
     idx_t* li = labels;
 #pragma omp parallel for
     for (idx_t i = 0; i < n * k; i++) {
