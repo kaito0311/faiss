@@ -41,6 +41,7 @@ struct IndexFlatCodes : Index {
     void add_with_quality(idx_t n, const float* x, const float* r_qua) override;
 
     bool get_include_quality();
+    void set_include_quality();
 
     void reset() override;
 

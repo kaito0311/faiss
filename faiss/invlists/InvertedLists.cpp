@@ -95,6 +95,9 @@ size_t InvertedLists::quality_list_size(size_t list_no) const {
 bool InvertedLists::get_include_quality() const {
     return include_quality;
 }
+void InvertedLists::set_include_quality() {
+    FAISS_THROW_MSG("set_include_quality not implemented");
+}
 size_t InvertedLists::get_quality_size() const {
     FAISS_THROW_MSG("InvertedLists::get_quality_size not implemented");
 }
@@ -345,6 +348,11 @@ size_t ArrayInvertedLists::quality_list_size(size_t list_no) const {
 
 bool ArrayInvertedLists::get_include_quality() const {
     return include_quality;
+}
+void ArrayInvertedLists::set_include_quality() {
+    this->include_quality = true;
+    qualities.resize(nlist);
+
 }
 size_t ArrayInvertedLists::get_quality_size() const {
     return qualities.size();

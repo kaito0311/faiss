@@ -2083,12 +2083,16 @@ void IndexIVF::reconstruct_qua_from_offset(
     FAISS_THROW_MSG("IndexIVF::reconstruct_qua_from_offset not implemented");
 }
 
+
 void IndexIVF::reset() {
     direct_map.clear();
     invlists->reset();
     ntotal = 0;
 }
 
+void IndexIVF::set_include_quality(){
+    invlists->set_include_quality(); 
+}
 size_t IndexIVF::remove_ids(const IDSelector& sel) {
     size_t nremove = direct_map.remove_ids(sel, invlists);
     ntotal -= nremove;

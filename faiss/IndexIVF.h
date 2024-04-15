@@ -401,6 +401,8 @@ struct IndexIVF : Index, IndexIVFInterface {
     /// they need
     virtual idx_t train_encoder_num_vectors() const;
 
+    void set_include_quality();
+
     void search_preassigned(
             idx_t n,
             const float* x,

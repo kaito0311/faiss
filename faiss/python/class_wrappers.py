@@ -229,7 +229,7 @@ def handle_Index(the_class):
         x = np.ascontiguousarray(x, dtype='float32')
         self.add_c(n, swig_ptr(x))
 
-    def quality_replacement_add(self, x, r_qua):
+    def replacement_add_with_quality(self, x, r_qua):
         """Adds vectors to the index.
         The index must be trained before vectors can be added to it.
         The vectors are implicitly numbered in sequence. When `n` vectors are
@@ -250,7 +250,7 @@ def handle_Index(the_class):
         assert d == self.d
         x = np.ascontiguousarray(x, dtype='float32')
         r_qua = np.ascontiguousarray(r_qua.reshape(-1, 1), dtype='float32')
-        self.add_c(n, swig_ptr(x), swig_ptr(r_qua))
+        self.add_with_quality_c(n, swig_ptr(x), swig_ptr(r_qua))
     
     def replacement_add_with_ids(self, x, ids):
         """Adds vectors with arbitrary ids to the index (not all indexes support this).
@@ -273,7 +273,7 @@ def handle_Index(the_class):
         assert ids.shape == (n, ), 'not same nb of vectors as ids'
         self.add_with_ids_c(n, swig_ptr(x), swig_ptr(ids))
 
-    def quality_replacement_add_with_ids(self, x, r_qua, ids):
+    def replacement_add_with_ids_with_quality(self, x, r_qua, ids):
         """Adds vectors with arbitrary ids to the index (not all indexes support this).
         The index must be trained before vectors can be added to it.
         Vector `i` is stored in `x[i]` and has id `ids[i]`.
@@ -296,7 +296,7 @@ def handle_Index(the_class):
         r_qua = np.ascontiguousarray(r_qua.reshape(-1, 1), dtype='float32')
         ids = np.ascontiguousarray(ids, dtype='int64')
         assert ids.shape == (n, ), 'not same nb of vectors as ids'
-        self.add_with_ids_c(n, swig_ptr(x), swig_ptr(r_qua), swig_ptr(ids))
+        self.add_with_ids_with_quality_c(n, swig_ptr(x), swig_ptr(r_qua), swig_ptr(ids))
 
     def replacement_assign(self, x, k, labels=None):
         """Find the k nearest neighbors of the set of vectors x in the index.
@@ -988,9 +988,9 @@ def handle_Index(the_class):
         self.permute_entries_c(faiss.swig_ptr(perm))
 
     replace_method(the_class, 'add', replacement_add)
-    replace_method(the_class, 'add', quality_replacement_add)
+    replace_method(the_class, 'add_with_quality', replacement_add_with_quality)
     replace_method(the_class, 'add_with_ids', replacement_add_with_ids)
-    replace_method(the_class, 'add_with_ids', quality_replacement_add_with_ids)
+    replace_method(the_class, 'add_with_ids_with_quality', replacement_add_with_ids_with_quality)
     replace_method(the_class, 'assign', replacement_assign)
     replace_method(the_class, 'train', replacement_train)
     replace_method(the_class, 'search', replacement_search)

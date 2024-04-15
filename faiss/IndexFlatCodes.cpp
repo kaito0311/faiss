@@ -51,6 +51,9 @@ void IndexFlatCodes::add(idx_t n, const float* x) {
 bool IndexFlatCodes::get_include_quality() {
     return include_quality;
 }
+void IndexFlatCodes::set_include_quality() {
+    this->include_quality = true;
+}
 
 void IndexFlatCodes::reset() {
     codes.clear();

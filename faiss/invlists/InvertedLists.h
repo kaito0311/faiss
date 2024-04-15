@@ -67,6 +67,7 @@ struct InvertedLists {
 
     /// function just for check code
     virtual bool get_include_quality() const; 
+    virtual void set_include_quality(); 
     virtual size_t get_quality_size() const; 
     virtual size_t get_codes_size() const; 
 
@@ -320,6 +321,7 @@ struct ArrayInvertedLists : InvertedLists {
     const uint8_t* get_codes(size_t list_no) const override;
     const idx_t* get_ids(size_t list_no) const override;
     bool get_include_quality() const override; 
+    void set_include_quality(); 
     size_t get_quality_size() const override;
     size_t get_codes_size() const override;
 
