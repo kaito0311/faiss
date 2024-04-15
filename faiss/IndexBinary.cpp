@@ -49,14 +49,34 @@ void IndexBinary::boundary_search(
     FAISS_THROW_MSG("boundary search not implemented");
 }
 
+void IndexBinary::search_with_quality(
+        idx_t,
+        const uint8_t*,
+        idx_t,
+        const int32_t,
+        const int32_t,
+        int32_t*,
+        idx_t*,
+        const SearchParameters*) const {
+    FAISS_THROW_MSG("search_with_quality not implemented");
+}
+
 void IndexBinary::assign(idx_t n, const uint8_t* x, idx_t* labels, idx_t k)
         const {
     std::vector<int> distances(n * k);
     search(n, x, k, distances.data(), labels);
 }
 
+void IndexBinary::add(idx_t, const uint8_t*, const uint8_t*) {
+    FAISS_THROW_MSG("add with quality not implemented for this type of index");
+}
+
 void IndexBinary::add_with_ids(idx_t, const uint8_t*, const idx_t*) {
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
+}
+
+void IndexBinary::add_with_ids(idx_t, const uint8_t*, const uint8_t*, const idx_t*) {
+    FAISS_THROW_MSG("add_with_ids with quality not implemented for this type of index");
 }
 
 size_t IndexBinary::remove_ids(const IDSelector&) {

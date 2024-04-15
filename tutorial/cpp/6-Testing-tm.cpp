@@ -4,6 +4,7 @@
 #include <random>
 
 #include <faiss/IndexFlat.h>
+#include <faiss/IndexIDMap.h>
 #include <faiss/IndexIVFFlat.h>
 #include <faiss/impl/ScalarQuantizer.h>
 #include <faiss/IndexScalarQuantizer.h>
@@ -48,40 +49,42 @@ int main(){
     int k = 4;
 
     faiss::IndexFlatL2 quantizer(d);
-    faiss::IndexIVFScalarQuantizer index(&quantizer, d, nlist, true, faiss::ScalarQuantizer::QT_fp16);
+    faiss::IndexIVFScalarQuantizer index_scalar(&quantizer, d, nlist, true, faiss::ScalarQuantizer::QT_fp16);
+    faiss::IndexIDMap index(&index_scalar);
+
     // faiss::IndexScalarQuantizer index(d, true, faiss::ScalarQuantizer::QT_fp16);
 
     index.train(nb, xb);
     // index.add(nb, xb);
-    index.add(nb, xb, r_qua);
-    index.make_direct_map(true);
+    index.add_with_ids(nb, xb, r_qua, ids);
+    // index.make_direct_map(true);
 
 
-    {
-        float* resconstruct_vector = new float[d]; 
-        float* qua_reconstruct = new float[10]; 
+    // {
+    //     float* resconstruct_vector = new float[d]; 
+    //     float* qua_reconstruct = new float[10]; 
 
-        // index.reconstruct_from_offset(0, 0, resconstruct_vector);
-        for(int i = 0; i < 10; i++) {
-            index.reconstruct(i, resconstruct_vector);
-            index.reconstruct_qua(i, qua_reconstruct);
+    //     // index.reconstruct_from_offset(0, 0, resconstruct_vector);
+    //     for(int i = 0; i < 10; i++) {
+    //         index.reconstruct(i, resconstruct_vector);
+    //         index.reconstruct_qua(i, qua_reconstruct);
 
-            // printf("%ld\n", index.invlists->code_size);
+    //         // printf("%ld\n", index.invlists->code_size);
 
-            // for (int j = 0; j < 5; j++){
-            //     printf("%f %f \n", resconstruct_vector[j], xb[i*d + j]);
-            // }
-            printf("\n");
-            printf("%f %f \n", qua_reconstruct[0], r_qua[i]);
-            printf("\n");
+    //         // for (int j = 0; j < 5; j++){
+    //         //     printf("%f %f \n", resconstruct_vector[j], xb[i*d + j]);
+    //         // }
+    //         printf("\n");
+    //         printf("%f %f \n", qua_reconstruct[0], r_qua[i]);
+    //         printf("\n");
 
-        }
-    }
+    //     }
+    // }
 
     {
         idx_t* I = new idx_t[k * nq];
         float* D = new float[k * nq];
-        index.nprobe = 10; 
+        // index.nprobe = 10; 
         index.search(nq, xq, k, D, I);
         printf("I=\n");
         for (int i = nq - 5; i < nq; i++) {
