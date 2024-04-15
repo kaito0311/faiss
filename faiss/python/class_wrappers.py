@@ -229,6 +229,29 @@ def handle_Index(the_class):
         x = np.ascontiguousarray(x, dtype='float32')
         self.add_c(n, swig_ptr(x))
 
+    def quality_replacement_add(self, x, r_qua):
+        """Adds vectors to the index.
+        The index must be trained before vectors can be added to it.
+        The vectors are implicitly numbered in sequence. When `n` vectors are
+        added to the index, they are given ids `ntotal`, `ntotal + 1`, ..., `ntotal + n - 1`.
+
+        Parameters
+        ----------
+        x : array_like
+            Query vectors, shape (n, d) where d is appropriate for the index.
+            `dtype` must be float32.
+        r_qua: array_like
+            Query vectors, shape (n, 1)
+            `dtype` must be float32.
+
+        """
+
+        n, d = x.shape
+        assert d == self.d
+        x = np.ascontiguousarray(x, dtype='float32')
+        r_qua = np.ascontiguousarray(r_qua.reshape(-1, 1), dtype='float32')
+        self.add_c(n, swig_ptr(x), swig_ptr(r_qua))
+    
     def replacement_add_with_ids(self, x, ids):
         """Adds vectors with arbitrary ids to the index (not all indexes support this).
         The index must be trained before vectors can be added to it.
@@ -249,6 +272,31 @@ def handle_Index(the_class):
         ids = np.ascontiguousarray(ids, dtype='int64')
         assert ids.shape == (n, ), 'not same nb of vectors as ids'
         self.add_with_ids_c(n, swig_ptr(x), swig_ptr(ids))
+
+    def quality_replacement_add_with_ids(self, x, r_qua, ids):
+        """Adds vectors with arbitrary ids to the index (not all indexes support this).
+        The index must be trained before vectors can be added to it.
+        Vector `i` is stored in `x[i]` and has id `ids[i]`.
+
+        Parameters
+        ----------
+        x : array_like
+            Query vectors, shape (n, d) where d is appropriate for the index.
+            `dtype` must be float32.
+        r_qua: array_like
+            Query vectors, shape (n, 1)
+            `dtype` must be float32.
+        ids : array_like
+            Array if ids of size n. The ids must be of type `int64`. Note that `-1` is reserved
+            in result lists to mean "not found" so it's better to not use it as an id.
+        """
+        n, d = x.shape
+        assert d == self.d
+        x = np.ascontiguousarray(x, dtype='float32')
+        r_qua = np.ascontiguousarray(r_qua.reshape(-1, 1), dtype='float32')
+        ids = np.ascontiguousarray(ids, dtype='int64')
+        assert ids.shape == (n, ), 'not same nb of vectors as ids'
+        self.add_with_ids_c(n, swig_ptr(x), swig_ptr(r_qua), swig_ptr(ids))
 
     def replacement_assign(self, x, k, labels=None):
         """Find the k nearest neighbors of the set of vectors x in the index.
@@ -341,6 +389,53 @@ def handle_Index(the_class):
             assert I.shape == (n, k)
 
         self.search_c(n, swig_ptr(x), k, swig_ptr(D), swig_ptr(I), params)
+        return D, I
+
+    def replacement_search_with_quality(self, x, k, lower_quality, upper_quality, *, params=None, D=None, I=None):
+        """Find the k nearest neighbors of the set of vectors x in the index.
+
+        Parameters
+        ----------
+        x : array_like
+            Query vectors, shape (n, d) where d is appropriate for the index.
+            `dtype` must be float32.
+        k : int
+            Number of nearest neighbors.
+        params : SearchParameters
+            Search parameters of the current search (overrides the class-level params)
+        D : array_like, optional
+            Distance array to store the result.
+        I : array_like, optional
+            Labels array to store the results.
+
+        Returns
+        -------
+        D : array_like
+            Distances of the nearest neighbors, shape (n, k). When not enough results are found
+            the label is set to +Inf or -Inf.
+        I : array_like
+            Labels of the nearest neighbors, shape (n, k).
+            When not enough results are found, the label is set to -1
+        """
+
+        n, d = x.shape
+        x = np.ascontiguousarray(x, dtype='float32')
+        r_qua = np.ascontiguousarray(r_qua.reshape(-1, 1), dtype='float32')
+        assert d == self.d
+
+        assert k > 0
+
+        if D is None:
+            D = np.empty((n, k), dtype=np.float32)
+        else:
+            assert D.shape == (n, k)
+
+        if I is None:
+            I = np.empty((n, k), dtype=np.int64)
+        else:
+            assert I.shape == (n, k)
+
+        self.search_with_quality_c(n, swig_ptr(x), k, lower_quality, upper_quality, swig_ptr(D), swig_ptr(I), params)
         return D, I
 
     def replacement_boundary_search(self, x, k, lower, upper, *, params=None, D=None, I=None, rm_duplicate = False, duplicate_thr = 1e-6):
@@ -503,6 +598,28 @@ def handle_Index(the_class):
         self.reconstruct_c(key, swig_ptr(x))
         return x
 
+    def replacement_reconstruct_qua(self, key, r_qua=None):
+        """Approximate reconstruction of one vector from the index.
+
+        Parameters
+        ----------
+        key : int
+            Id of the vector to reconstruct
+        x : array_like, optional
+            pre-allocated array to store the results
+
+        Returns
+        -------
+        x : array_like reconstructed vector, size `self.d`, `dtype`=float32
+        """
+        if r_qua is None:
+            r_qua = np.empty(1, dtype=np.float32)
+        else:
+            assert x.shape == (1, )
+
+        self.reconstruct_qua_c(key, swig_ptr(r_qua))
+        return x
+
     def replacement_reconstruct_batch(self, key, x=None):
         """Approximate reconstruction of several vectors from the index.
 
@@ -553,6 +670,34 @@ def handle_Index(the_class):
             assert x.shape == (ni, self.d)
 
         self.reconstruct_n_c(n0, ni, swig_ptr(x))
+        return x
+
+    def replacement_reconstruct_qua_n(self, n0=0, ni=-1, r_qua=None):
+        """Approximate reconstruction of vectors `n0` ... `n0 + ni - 1` from the index.
+        Missing vectors trigger an exception.
+
+        Parameters
+        ----------
+        n0 : int
+            Id of the first vector to reconstruct (default 0)
+        ni : int
+            Number of vectors to reconstruct (-1 = default = ntotal)
+        x : array_like, optional
+            pre-allocated array to store the results
+
+        Returns
+        -------
+        x : array_like
+            Reconstructed vectors, size (`ni`, `self.d`), `dtype`=float32
+        """
+        if ni == -1:
+            ni = self.ntotal - n0
+        if r_qua is None:
+            r_qua = np.empty((ni, 1), dtype=np.float32)
+        else:
+            assert x.shape == (ni, 1)
+
+        self.reconstruct_n_c(n0, ni, swig_ptr(r_qua))
         return x
 
     def replacement_update_vectors(self, keys, x):
@@ -843,15 +988,20 @@ def handle_Index(the_class):
         self.permute_entries_c(faiss.swig_ptr(perm))
 
     replace_method(the_class, 'add', replacement_add)
+    replace_method(the_class, 'add', quality_replacement_add)
     replace_method(the_class, 'add_with_ids', replacement_add_with_ids)
+    replace_method(the_class, 'add_with_ids', quality_replacement_add_with_ids)
     replace_method(the_class, 'assign', replacement_assign)
     replace_method(the_class, 'train', replacement_train)
     replace_method(the_class, 'search', replacement_search)
+    replace_method(the_class, 'search_with_quality', replacement_search_with_quality)
     replace_method(the_class, 'remove_ids', replacement_remove_ids)
     replace_method(the_class, 'reconstruct', replacement_reconstruct)
+    replace_method(the_class, 'reconstruct_qua', replacement_reconstruct_qua)
     replace_method(the_class, 'reconstruct_batch',
                    replacement_reconstruct_batch)
     replace_method(the_class, 'reconstruct_n', replacement_reconstruct_n)
+    replace_method(the_class, 'reconstruct_qua_n', replacement_reconstruct_qua_n)
     replace_method(the_class, 'range_search', replacement_range_search)
     replace_method(the_class, 'boundary_search', replacement_boundary_search)
     replace_method(the_class, 'update_vectors', replacement_update_vectors,
