@@ -61,12 +61,26 @@ struct IndexScalarQuantizer : IndexFlatCodes {
             idx_t* labels,
             const SearchParameters* params = nullptr) const override;
 
+    void search_with_quality(
+            idx_t n, 
+            const float* x, 
+            idx_t k, 
+            const float lower_quality,
+            const float upper_quality, 
+            float* distances,
+            idx_t* labels,
+            const SearchParameters* params = nullptr) const override;
+
     FlatCodesDistanceComputer* get_FlatCodesDistanceComputer() const override;
 
     /* standalone codec interface */
     void sa_encode(idx_t n, const float* x, uint8_t* bytes) const override;
 
+    void sa_qua_encode(idx_t n, const float* r_qua, uint8_t* bytes) const override;
+
     void sa_decode(idx_t n, const uint8_t* bytes, float* x) const override;
+
+    void sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const override;
 };
 
 /** An IVF implementation where the components of the residuals are
@@ -105,6 +119,13 @@ struct IndexIVFScalarQuantizer : IndexIVF {
             const idx_t* xids,
             const idx_t* precomputed_idx) override;
 
+    void add_core(
+            idx_t n,
+            const float* x,
+            const float* r_qua,
+            const idx_t* xids,
+            const idx_t* precomputed_idx) override;
+
     InvertedListScanner* get_InvertedListScanner(
             bool store_pairs,
             const IDSelector* sel) const override;
@@ -112,6 +133,9 @@ struct IndexIVFScalarQuantizer : IndexIVF {
     void reconstruct_from_offset(int64_t list_no, int64_t offset, float* recons)
             const override;
 
+    void reconstruct_qua_from_offset(int64_t list_no, int64_t offset, float* qua_recons)
+            const override;
+            
     /* standalone codec interface */
     void sa_decode(idx_t n, const uint8_t* bytes, float* x) const override;
 };

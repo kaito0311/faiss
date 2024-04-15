@@ -1229,6 +1229,41 @@ struct IVFSQScannerIP : InvertedListScanner {
         return nup;
     }
 
+    size_t scan_codes_with_quality(
+            size_t list_size,
+            const uint8_t* codes,
+            const idx_t* ids,
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality,
+            float* simi,
+            idx_t* idxi,
+            size_t k) const override {
+        size_t nup = 0;
+        const float* curr_qualities = (float*) qualities;
+        for (size_t j = 0; j < list_size; j++, codes += code_size) {
+            if (use_sel && !sel->is_member(use_sel == 1 ? ids[j] : j)) {
+                continue;
+            }
+    
+            float curr_quality = curr_qualities[0];
+            curr_qualities += 1;
+
+
+            if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
+                float accu = accu0 + dc.query_to_code(codes);
+                
+                if (accu > simi[0]) {
+                    int64_t id = store_pairs ? (list_no << 32 | j) : ids[j];
+                    minheap_replace_top(k, simi, idxi, accu, id);
+                    nup++;
+                }
+            }
+
+        }
+        return nup;
+    }
+
     void scan_codes_range(
             size_t list_size,
             const uint8_t* codes,
@@ -1323,6 +1358,40 @@ struct IVFSQScannerL2 : InvertedListScanner {
                 maxheap_replace_top(k, simi, idxi, dis, id);
                 nup++;
             }
+        }
+        return nup;
+    }
+
+    size_t scan_codes_with_quality(
+            size_t list_size,
+            const uint8_t* codes,
+            const idx_t* ids,
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality,
+            float* simi,
+            idx_t* idxi,
+            size_t k) const override {
+        size_t nup = 0;
+        const float* curr_qualities = (float*) qualities;
+        for (size_t j = 0; j < list_size; j++, codes += code_size) {
+            if (use_sel && !sel->is_member(use_sel == 1 ? ids[j] : j)) {
+                continue;
+            }
+
+            float curr_quality = curr_qualities[0];
+            curr_qualities += 1;
+
+            if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
+                float dis = dc.query_to_code(codes);
+
+                if (dis < simi[0]) {
+                    int64_t id = store_pairs ? (list_no << 32 | j) : ids[j];
+                    maxheap_replace_top(k, simi, idxi, dis, id);
+                    nup++;
+                }
+            }
+
         }
         return nup;
     }

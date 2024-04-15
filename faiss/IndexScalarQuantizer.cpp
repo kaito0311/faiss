@@ -89,6 +89,53 @@ void IndexScalarQuantizer::search(
     }
 }
 
+void IndexScalarQuantizer::search_with_quality(
+        idx_t n,
+        const float* x,
+        idx_t k,
+        const float lower_quality,
+        const float upper_quality,
+        float* distances,
+        idx_t* labels,
+        const SearchParameters* params) const {
+    const IDSelector* sel = params ? params->sel : nullptr;
+
+    FAISS_THROW_IF_NOT(k > 0);
+    FAISS_THROW_IF_NOT(is_trained);
+    FAISS_THROW_IF_NOT(
+            metric_type == METRIC_L2 || metric_type == METRIC_INNER_PRODUCT);
+
+#pragma omp parallel
+    {
+        InvertedListScanner* scanner =
+                sq.select_InvertedListScanner(metric_type, nullptr, true, sel);
+
+        ScopeDeleter1<InvertedListScanner> del(scanner);
+        scanner->list_no = 0; // directly the list number
+
+#pragma omp for
+        for (idx_t i = 0; i < n; i++) {
+            float* D = distances + k * i;
+            idx_t* I = labels + k * i;
+            // re-order heap
+            if (metric_type == METRIC_L2) {
+                maxheap_heapify(k, D, I);
+            } else {
+                minheap_heapify(k, D, I);
+            }
+            scanner->set_query(x + i * d);
+            scanner->scan_codes_with_quality(ntotal, codes.data(), nullptr, qualities.data(), lower_quality, upper_quality, D, I, k);
+
+            // re-order heap
+            if (metric_type == METRIC_L2) {
+                maxheap_reorder(k, D, I);
+            } else {
+                minheap_reorder(k, D, I);
+            }
+        }
+    }
+}
+
 void IndexScalarQuantizer::boundary_search(
         idx_t n,
         const float* x,
@@ -155,10 +202,22 @@ void IndexScalarQuantizer::sa_encode(idx_t n, const float* x, uint8_t* bytes)
     sq.compute_codes(x, bytes, n);
 }
 
+void IndexScalarQuantizer::sa_qua_encode(idx_t n, const float* r_qua, uint8_t* bytes) const{
+    if (n > 0) {
+        memcpy(bytes, r_qua, sizeof(float) * n); 
+    }
+}
+
 void IndexScalarQuantizer::sa_decode(idx_t n, const uint8_t* bytes, float* x)
         const {
     FAISS_THROW_IF_NOT(is_trained);
     sq.decode(bytes, x, n);
+}
+
+void IndexScalarQuantizer::sa_qua_decode(idx_t n, const uint8_t* bytes, float* r_qua) const {
+    if (n > 0) { // n: number of element 
+        memcpy(r_qua, bytes, sizeof(float) * n); 
+    }
 }
 
 /*******************************************************************
@@ -301,6 +360,59 @@ void IndexIVFScalarQuantizer::add_core(
     ntotal += n;
 }
 
+void IndexIVFScalarQuantizer::add_core(
+        idx_t n,
+        const float* x,
+        const float* r_qua,
+        const idx_t* xids,
+        const idx_t* coarse_idx) {
+    FAISS_THROW_IF_NOT(is_trained);
+    assert(invlists);
+    FAISS_THROW_IF_NOT(invlists->has_quality(0));
+    FAISS_THROW_IF_NOT_MSG(invlists->include_quality == true, "include_quality must be true to add_core with quality array");
+    
+    size_t nadd = 0;
+    std::unique_ptr<ScalarQuantizer::SQuantizer> squant(sq.select_quantizer());
+
+    DirectMapAdd dm_add(direct_map, n, xids);
+
+#pragma omp parallel reduction(+ : nadd)
+    {
+        std::vector<float> residual(d);
+        std::vector<uint8_t> one_code(code_size);
+        int nt = omp_get_num_threads();
+        int rank = omp_get_thread_num();
+
+        // each thread takes care of a subset of lists
+        for (size_t i = 0; i < n; i++) {
+            int64_t list_no = coarse_idx[i];
+            if (list_no >= 0 && list_no % nt == rank) {
+                int64_t id = xids ? xids[i] : ntotal + i;
+
+                const float* xi = x + i * d;
+                const float* r_qua_i = r_qua + i * 1; 
+                if (by_residual) {
+                    quantizer->compute_residual(xi, residual.data(), list_no);
+                    xi = residual.data();
+                }
+
+                memset(one_code.data(), 0, code_size);
+                squant->encode_vector(xi, one_code.data());
+
+                size_t ofs = invlists->add_entry(list_no, id, one_code.data(), (const uint8_t*)r_qua_i);
+
+                dm_add.add(i, list_no, ofs);
+                nadd++;
+
+            } else if (rank == 0 && list_no == -1) {
+                dm_add.add(i, -1, 0);
+            }
+        }
+    }
+
+    ntotal += n;
+}
+
 InvertedListScanner* IndexIVFScalarQuantizer::get_InvertedListScanner(
         bool store_pairs,
         const IDSelector* sel) const {
@@ -325,6 +437,13 @@ void IndexIVFScalarQuantizer::reconstruct_from_offset(
     } else {
         sq.decode(code, recons, 1);
     }
+}
+
+void IndexIVFScalarQuantizer::reconstruct_qua_from_offset(
+        int64_t list_no,
+        int64_t offset,
+        float* qua_recons) const {
+    memcpy(qua_recons, invlists->get_single_quality(list_no, offset), qua_size);
 }
 
 } // namespace faiss
