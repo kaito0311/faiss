@@ -39,6 +39,7 @@ struct InvertedLists {
     size_t code_size; ///< code size per vector in bytes
     bool use_iterator;
     bool include_quality = false; 
+    static const size_t qua_size = sizeof(float); ///< size of quality
 
     InvertedLists(size_t nlist, size_t code_size);
     InvertedLists(size_t nlist, size_t code_size, bool include_quaity_in);
@@ -311,7 +312,7 @@ struct ArrayInvertedLists : InvertedLists {
 
     // qualities array 
     std::vector<std::vector<uint8_t>> qualities; 
-    static const size_t qua_size = sizeof(float); ///< size of quality
+    
     
 
     ArrayInvertedLists(size_t nlist, size_t code_size);
