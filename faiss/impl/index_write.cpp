@@ -284,17 +284,21 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
             WRITEVECTOR(sizes);
         }
         // make a single contiguous data buffer (useful for mmapping)
+        WRITE1(ails->include_quality);
+        
         for (size_t i = 0; i < ails->nlist; i++) {
             size_t n = ails->ids[i].size();
             if (n > 0) {
                 WRITEANDCHECK(ails->codes[i].data(), n * ails->code_size);
                 WRITEANDCHECK(ails->ids[i].data(), n);
-                WRITEANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
+                if (ails->include_quality) {
+                    WRITEANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
+                }
             }
         }
-        WRITE1(ails->include_quality);
 
     } else {
+        printf("write_InvertedLists: InvertedListsIOHook \n");
         InvertedListsIOHook::lookup_classname(typeid(*ils).name())
                 ->write(ils, f);
     }
@@ -645,6 +649,7 @@ void write_index(const Index* idx, IOWriter* f) {
                     dynamic_cast<const IndexIVFScalarQuantizer*>(idx)) {
         uint32_t h = fourcc("IwSq");
         WRITE1(h);
+        printf("============= IwSq write index ============= \n");
         write_ivf_header(ivsc, f);
         write_ScalarQuantizer(&ivsc->sq, f);
         WRITE1(ivsc->code_size);

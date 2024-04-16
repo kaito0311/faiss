@@ -208,24 +208,29 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
             ails->codes[i].resize(sizes[i] * ails->code_size);
             ails->qualities[i].resize(sizes[i] * ails->qua_size);
         }
+
+        READ1(ails->include_quality);
+        printf("quality include: %d \n", ails->include_quality);
         for (size_t i = 0; i < ails->nlist; i++) {
             size_t n = ails->ids[i].size();
             if (n > 0) {
                 READANDCHECK(ails->codes[i].data(), n * ails->code_size);
                 READANDCHECK(ails->ids[i].data(), n);
-                READANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
+                if (ails->include_quality) {
+                    READANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
+                }
             }
         }
 
-        READ1(ails->include_quality);
 
-        if (ails->include_quality == false) { 
-            ails->qualities.resize(0);
-        }
+        // if (ails->include_quality == false) { 
+        //     ails->qualities.resize(0);
+        // }
 
         return ails;
 
     } else if (h == fourcc("ilar") && (io_flags & IO_FLAG_SKIP_IVF_DATA)) {
+        printf("io_flags & IO_FLAG_SKIP_IVF_DATA \n");
         // code is always ilxx where xx is specific to the type of invlists we
         // want so we get the 16 high bits from the io_flag and the 16 low bits
         // as "il"
@@ -827,6 +832,7 @@ Index* read_index(IOReader* f, int io_flags) {
             READVECTOR(ail->codes[i]);
         idx = ivsc;
     } else if (h == fourcc("IwSQ") || h == fourcc("IwSq")) {
+        printf("============= IwSq read index =============\n");
         IndexIVFScalarQuantizer* ivsc = new IndexIVFScalarQuantizer();
         read_ivf_header(ivsc, f);
         read_ScalarQuantizer(&ivsc->sq, f);
@@ -946,6 +952,7 @@ Index* read_index(IOReader* f, int io_flags) {
         read_index_header(idxmap, f);
         idxmap->index = read_index(f, io_flags);
         idxmap->own_fields = true;
+        printf("eheh \n");
         READVECTOR(idxmap->id_map);
         if (is_map2) {
             static_cast<IndexIDMap2*>(idxmap)->construct_rev_map();

@@ -23,7 +23,7 @@ int main() {
 
 
 
-    int d = 64;      // dimension
+    int d = 512;      // dimension
     int nb = 10000; // database size
     int nq = 1000;  // nb of queries
 
@@ -57,22 +57,31 @@ int main() {
 
     /* ==================== Search ondisk =======================*/
 
-    std::string filename = "tmp_fiass";
+    // std::string filename = "tmp_fiass";
 
-    faiss::IndexFlatL2 quantizer(d);
+    // faiss::IndexFlatL2 quantizer(d);
 
-    faiss::IndexIVFFlat index(&quantizer, d, nlist);
+    // faiss::IndexIVFFlat index(&quantizer, d, nlist);
 
-    faiss::OnDiskInvertedLists ivf(
-                    index.nlist, index.code_size, filename.c_str());
+    // faiss::OnDiskInvertedLists ivf(
+    //                 index.nlist, index.code_size, filename.c_str());
 
-    index.replace_invlists(&ivf);
+    // index.replace_invlists(&ivf);
 
-    idx_t* I = new idx_t[k * nq];
+    // idx_t* I = new idx_t[k * nq];
 
-    float* D = new float[k * nq];
+    // float* D = new float[k * nq];
 
-    index.search(nq, xq, k, D, I);
+    // index.search(nq, xq, k, D, I);
+
+    faiss::Index* index = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/onram/index_ivfsq.bin", faiss::IO_FLAG_MMAP);
+    const faiss::IndexIVFScalarQuantizer* ivsc = dynamic_cast<const faiss::IndexIVFScalarQuantizer*>(index);
+    index->add_with_ids(nb, xb, ids);
+    faiss::write_index(index, "./indexflat.bin");
+
+    // faiss::Index* index2 = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/ondisk/index_ivfsq.bin", 0);
+
+
 
 
 
