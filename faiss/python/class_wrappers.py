@@ -420,7 +420,6 @@ def handle_Index(the_class):
 
         n, d = x.shape
         x = np.ascontiguousarray(x, dtype='float32')
-        r_qua = np.ascontiguousarray(r_qua.reshape(-1, 1), dtype='float32')
         assert d == self.d
 
         assert k > 0
@@ -605,20 +604,20 @@ def handle_Index(the_class):
         ----------
         key : int
             Id of the vector to reconstruct
-        x : array_like, optional
+        r_qua : array_like, optional
             pre-allocated array to store the results
 
         Returns
         -------
-        x : array_like reconstructed vector, size `self.d`, `dtype`=float32
+        r_qua : array_like reconstructed vector, size `self.d`, `dtype`=float32
         """
         if r_qua is None:
             r_qua = np.empty(1, dtype=np.float32)
         else:
-            assert x.shape == (1, )
+            assert r_qua.shape == (1, )
 
         self.reconstruct_qua_c(key, swig_ptr(r_qua))
-        return x
+        return r_qua
 
     def replacement_reconstruct_batch(self, key, x=None):
         """Approximate reconstruction of several vectors from the index.
@@ -682,12 +681,12 @@ def handle_Index(the_class):
             Id of the first vector to reconstruct (default 0)
         ni : int
             Number of vectors to reconstruct (-1 = default = ntotal)
-        x : array_like, optional
+        r_qua : array_like, optional
             pre-allocated array to store the results
 
         Returns
         -------
-        x : array_like
+        r_qua : array_like
             Reconstructed vectors, size (`ni`, `self.d`), `dtype`=float32
         """
         if ni == -1:
@@ -695,10 +694,10 @@ def handle_Index(the_class):
         if r_qua is None:
             r_qua = np.empty((ni, 1), dtype=np.float32)
         else:
-            assert x.shape == (ni, 1)
+            assert r_qua.shape == (ni, 1)
 
         self.reconstruct_n_c(n0, ni, swig_ptr(r_qua))
-        return x
+        return r_qua
 
     def replacement_update_vectors(self, keys, x):
         n = keys.size
@@ -810,6 +809,71 @@ def handle_Index(the_class):
             n, swig_ptr(x),
             k,
             swig_ptr(Iq), swig_ptr(Dq),
+            swig_ptr(D), swig_ptr(I),
+            False
+        )
+        return D, I
+
+    def replacement_search_preassigned_with_quality(self, x, k, Iq, Dq, lower_quality, upper_quality, *, params=None, D=None, I=None):
+        """Find the k nearest neighbors of the set of vectors x in an IVF index,
+        with precalculated coarse quantization assignment.
+
+        Parameters
+        ----------
+        x : array_like
+            Query vectors, shape (n, d) where d is appropriate for the index.
+            `dtype` must be float32.
+        k : int
+            Number of nearest neighbors.
+        Dq : array_like, optional
+            Distance array to the centroids, size (n, nprobe)
+        Iq : array_like, optional
+            Nearest centroids, size (n, nprobe)
+
+        params : SearchParameters
+            Search parameters of the current search (overrides the class-level params)
+        D : array_like, optional
+            Distance array to store the result.
+        I : array_like, optional
+            Labels array to store the results.
+
+        Returns
+        -------
+        D : array_like
+            Distances of the nearest neighbors, shape (n, k). When not enough results are found
+            the label is set to +Inf or -Inf.
+        I : array_like
+            Labels of the nearest neighbors, shape (n, k).
+            When not enough results are found, the label is set to -1
+        """
+        n, d = x.shape
+        x = np.ascontiguousarray(x, dtype='float32')
+        assert d == self.d
+        assert k > 0
+
+        if D is None:
+            D = np.empty((n, k), dtype=np.float32)
+        else:
+            assert D.shape == (n, k)
+
+        if I is None:
+            I = np.empty((n, k), dtype=np.int64)
+        else:
+            assert I.shape == (n, k)
+
+        Iq = np.ascontiguousarray(Iq, dtype='int64')
+        assert params is None, "params not supported"
+        assert Iq.shape == (n, self.nprobe)
+
+        if Dq is not None:
+            Dq = np.ascontiguousarray(Dq, dtype='float32')
+            assert Dq.shape == Iq.shape
+
+        self.search_preassigned_with_quality_c(
+            n, swig_ptr(x),
+            k,
+            swig_ptr(Iq), swig_ptr(Dq),
+            lower_quality, upper_quality,
             swig_ptr(D), swig_ptr(I),
             False
         )
@@ -1014,6 +1078,8 @@ def handle_Index(the_class):
                    replacement_search_preassigned, ignore_missing=True)
     replace_method(the_class, 'range_search_preassigned',
                    replacement_range_search_preassigned, ignore_missing=True)
+    replace_method(the_class, 'search_preassigned_with_quality',
+                   replacement_search_preassigned_with_quality, ignore_missing=True)
     replace_method(the_class, 'sa_encode', replacement_sa_encode)
     replace_method(the_class, 'sa_decode', replacement_sa_decode)
     replace_method(the_class, 'add_sa_codes', replacement_add_sa_codes,

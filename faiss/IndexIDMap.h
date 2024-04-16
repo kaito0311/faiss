@@ -112,9 +112,14 @@ struct IndexIDMap2Template : IndexIDMapTemplate<IndexT> {
     void add_with_ids(idx_t n, const component_t* x, const idx_t* xids)
             override;
 
+    void add_with_ids_with_quality(idx_t n, const component_t* x, const component_t* r_qua, const idx_t* xids)
+            override;
+
     size_t remove_ids(const IDSelector& sel) override;
 
     void reconstruct(idx_t key, component_t* recons) const override;
+
+    void reconstruct_qua(idx_t key, component_t* qua_recons) const override;
 
     /// check that the rev_map and the id_map are in sync
     void check_consistency() const;

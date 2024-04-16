@@ -191,6 +191,10 @@ IndexIVF::IndexIVF(
     if (metric_type == METRIC_INNER_PRODUCT) {
         cp.spherical = true;
     }
+
+    if (include_quality) {
+        this->make_direct_map(true);
+    }
 }
 
 IndexIVF::IndexIVF() = default;
@@ -2091,6 +2095,7 @@ void IndexIVF::reset() {
 }
 
 void IndexIVF::set_include_quality(){
+    this->make_direct_map(true);
     invlists->set_include_quality(); 
 }
 size_t IndexIVF::remove_ids(const IDSelector& sel) {

@@ -323,6 +323,19 @@ void IndexIDMap2Template<IndexT>::add_with_ids(
 }
 
 template <typename IndexT>
+void IndexIDMap2Template<IndexT>::add_with_ids_with_quality(
+        idx_t n,
+        const typename IndexT::component_t* x,
+        const typename IndexT::component_t* r_qua,
+        const idx_t* xids) {
+    size_t prev_ntotal = this->ntotal;
+    IndexIDMapTemplate<IndexT>::add_with_ids_with_quality(n, x, r_qua, xids);
+    for (size_t i = prev_ntotal; i < this->ntotal; i++) {
+        rev_map[this->id_map[i]] = i;
+    }
+}
+
+template <typename IndexT>
 void IndexIDMap2Template<IndexT>::check_consistency() const {
     FAISS_THROW_IF_NOT(rev_map.size() == this->id_map.size());
     FAISS_THROW_IF_NOT(this->id_map.size() == this->ntotal);
@@ -367,6 +380,13 @@ void IndexIDMap2Template<IndexT>::reconstruct(
     } catch (const std::out_of_range& e) {
         FAISS_THROW_FMT("key %" PRId64 " not found", key);
     }
+}
+
+template <typename IndexT> 
+void IndexIDMap2Template<IndexT>::reconstruct_qua(
+        idx_t key, 
+        typename IndexT::component_t* qua_recons) const {
+            this->index->reconstruct_qua(rev_map.at(key), qua_recons);
 }
 
 // explicit template instantiations

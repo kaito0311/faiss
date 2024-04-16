@@ -156,6 +156,13 @@ struct IndexBinary {
      * @param recons      reconstucted vector (size d / 8)
      */
     virtual void reconstruct(idx_t key, uint8_t* recons) const;
+    /** Reconstruct a stored vector.
+     *
+     * This function may not be defined for some indexes.
+     * @param key         id of the vector to reconstruct
+     * @param recons      reconstucted vector (size d / 8)
+     */
+    virtual void reconstruct_qua(idx_t key, uint8_t* qua_recons) const;
 
     /** Reconstruct vectors i0 to i0 + ni - 1.
      *

@@ -88,6 +88,10 @@ void IndexBinary::reconstruct(idx_t, uint8_t*) const {
     FAISS_THROW_MSG("reconstruct not implemented for this type of index");
 }
 
+void IndexBinary::reconstruct_qua(idx_t, uint8_t*) const {
+    FAISS_THROW_MSG("reconstruct_qua not implemented for this type of index");
+}
+
 void IndexBinary::reconstruct_n(idx_t i0, idx_t ni, uint8_t* recons) const {
     for (idx_t i = 0; i < ni; i++) {
         reconstruct(i0 + i, recons + i * code_size);

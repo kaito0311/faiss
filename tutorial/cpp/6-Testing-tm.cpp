@@ -53,13 +53,15 @@ int main(){
 
     faiss::IndexFlatL2 quantizer(d);
     faiss::IndexIVFScalarQuantizer index_scalar(&quantizer, d, nlist, true, faiss::ScalarQuantizer::QT_fp16);
-    faiss::IndexIDMap index(&index_scalar);
+    // index_scalar.set_direct_map_type(faiss::DirectMap::Hashtable);
+    // index_scalar.make_direct_map(true);
+    faiss::IndexIDMap2 index(&index_scalar);
 
     // faiss::IndexScalarQuantizer index(d, true, faiss::ScalarQuantizer::QT_fp16);
 
     index.train(nb, xb);
     // index.add(nb, xb);
-    index.add_with_ids(nb, xb, r_qua, ids);
+    index.add_with_ids_with_quality(nb, xb, r_qua, ids);
     // index.make_direct_map(true);
 
 
@@ -101,14 +103,18 @@ int main(){
         printf("I=\n");
         for (int i = nq - 5; i < nq; i++) {
             for (int j = 0; j < k; j++){
-                // index.reconstruct_qua(I[i * k + j], qua_reconstruct);
-                printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
+                float* qua_reconstruct = new float[10];
+                index.reconstruct_qua(I[i * k + j], qua_reconstruct);
+                printf("%5zd %f %f", I[i * k + j], r_qua[(I[i*k +j])%10000], qua_reconstruct[0]);
             }
             printf("\n");
         }
     }
 
     printf("Hello world!!!\n");
+    float* qua_reconstruct = new float[10];
+    index.reconstruct_qua(10, qua_reconstruct);
+
     return 0;
     
 }
