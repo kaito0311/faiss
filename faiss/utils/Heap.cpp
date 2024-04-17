@@ -141,6 +141,153 @@ template struct HeapArray<CMax<float, int32_t>>;
 template struct HeapArray<CMin<int, int64_t>>;
 template struct HeapArray<CMax<int, int64_t>>;
 
+/* for quality */
+template <typename C>
+void HeapArrayQuality<C>::heapify() {
+#pragma omp parallel for
+    for (int64_t j = 0; j < nh; j++)
+        heap_heapify_quality<C>(k, val + j * k, ids + j * k, qua + j * k);
+}
+
+template <typename C>
+void HeapArrayQuality<C>::reorder() {
+#pragma omp parallel for
+    for (int64_t j = 0; j < nh; j++)
+        heap_reorder_quality<C>(k, val + j * k, ids + j * k, qua + j * k);
+}
+
+template <typename C>
+void HeapArrayQuality<C>::addn(size_t nj, const T* vin, const T* qin, TI j0, size_t i0, int64_t ni) {
+    if (ni == -1)
+        ni = nh;
+    assert(i0 >= 0 && i0 + ni <= nh);
+#pragma omp parallel for if (ni * nj > 100000)
+    for (int64_t i = i0; i < i0 + ni; i++) {
+        T* __restrict simi = get_val(i);
+        TI* __restrict idxi = get_ids(i);
+        T* __restrict qii = get_qua(i); 
+
+        const T* ip_line = vin + (i - i0) * nj;
+        const T* qin_line = qin + (i - i0) * nj;
+
+        for (size_t j = 0; j < nj; j++) {
+            T ip = ip_line[j];
+            T qin_tmp = qin_line[j];
+            if (C::cmp(simi[0], ip)) {
+                heap_replace_top_quality<C>(k, simi, idxi, qii, ip, j + j0, qin_tmp);
+            }
+        }
+    }
+}
+
+template <typename C>
+void HeapArrayQuality<C>::addn_with_ids(
+        size_t nj,
+        const T* vin,
+        const T* qin,
+        const TI* id_in,
+        int64_t id_stride,
+        size_t i0,
+        int64_t ni) {
+    if (id_in == nullptr) {
+        addn(nj, vin, qin, 0, i0, ni);
+        return;
+    }
+    if (ni == -1)
+        ni = nh;
+    assert(i0 >= 0 && i0 + ni <= nh);
+#pragma omp parallel for if (ni * nj > 100000)
+    for (int64_t i = i0; i < i0 + ni; i++) {
+        T* __restrict simi = get_val(i);
+        TI* __restrict idxi = get_ids(i);
+        T* __restrict qii = get_qua(i); 
+
+        const T* ip_line = vin + (i - i0) * nj;
+        const TI* id_line = id_in + (i - i0) * id_stride;
+        const T* qin_line = qin + (i - i0) * nj;
+
+        for (size_t j = 0; j < nj; j++) {
+            T ip = ip_line[j];
+            T qin_tmp = qin_line[j];
+            if (C::cmp(simi[0], ip)) {
+                heap_replace_top_quality<C>(k, simi, idxi, qii, ip, id_line[j], qin_tmp);
+            }
+        }
+    }
+}
+
+template <typename C>
+void HeapArrayQuality<C>::addn_query_subset_with_ids(
+        size_t nsubset,
+        const TI* subset,
+        size_t nj,
+        const T* vin,
+        const T* qin,
+        const TI* id_in,
+        int64_t id_stride) {
+    FAISS_THROW_IF_NOT_MSG(id_in, "anonymous ids not supported");
+    if (id_stride < 0) {
+        id_stride = nj;
+    }
+#pragma omp parallel for if (nsubset * nj > 100000)
+    for (int64_t si = 0; si < nsubset; si++) {
+        TI i = subset[si];
+        T* __restrict simi = get_val(i);
+        TI* __restrict idxi = get_ids(i);
+        T* __restrict qii = get_qua(i); 
+
+        const T* ip_line = vin + si * nj;
+        const TI* id_line = id_in + si * id_stride;
+        const T* qin_line = qin + si * nj;
+
+        for (size_t j = 0; j < nj; j++) {
+            T ip = ip_line[j];
+            T qin_tmp = qin_line[j];
+            if (C::cmp(simi[0], ip)) {
+                heap_replace_top_quality<C>(k, simi, idxi, qii, ip, id_line[j], qin_tmp);
+            }
+        }
+    }
+}
+
+template <typename C>
+void HeapArrayQuality<C>::per_line_extrema(T* out_val, T* out_qua, TI* out_ids) const {
+#pragma omp parallel for if (nh * k > 100000)
+    for (int64_t j = 0; j < nh; j++) {
+        int64_t imin = -1;
+        typename C::T xval = C::Crev::neutral();
+        typename C::T qval = C::Crev::neutral();
+        const typename C::T* x_ = val + j * k;
+        const typename C::T* q_ = qua + j * k;
+        for (size_t i = 0; i < k; i++)
+            if (C::cmp(x_[i], xval)) {
+                xval = x_[i];
+                qval = q_[i];
+                imin = i;
+            }
+        if (out_val)
+            out_val[j] = xval;
+        if (out_qua)
+            out_qua[j] = qval;
+
+        if (out_ids) {
+            if (ids && imin != -1)
+                out_ids[j] = ids[j * k + imin];
+            else
+                out_ids[j] = imin;
+        }
+    }
+}
+
+// explicit instanciations
+
+template struct HeapArrayQuality<CMin<float, int64_t>>;
+template struct HeapArrayQuality<CMax<float, int64_t>>;
+template struct HeapArrayQuality<CMin<float, int32_t>>;
+template struct HeapArrayQuality<CMax<float, int32_t>>;
+template struct HeapArrayQuality<CMin<int, int64_t>>;
+template struct HeapArrayQuality<CMax<int, int64_t>>;
+
 /**********************************************************
  * merge knn search results
  **********************************************************/
@@ -246,5 +393,121 @@ INSTANTIATE(CMin, float);
 INSTANTIATE(CMax, float);
 INSTANTIATE(CMin, int32_t);
 INSTANTIATE(CMax, int32_t);
+
+/** Merge result tables from several shards. The per-shard results are assumed
+ * to be sorted. Note that the C comparator is reversed w.r.t. the usual top-k
+ * element heap because we want the best (ie. lowest for L2) result to be on
+ * top, not the worst.
+ *
+ * @param all_distances  size (nshard, n, k)
+ * @param all_labels     size (nshard, n, k)
+ * @param distances      output distances, size (n, k)
+ * @param labels         output labels, size (n, k)
+ */
+template <class idx_t, class C>
+void merge_knn_results_quality(
+        size_t n,
+        size_t k,
+        typename C::TI nshard,
+        const typename C::T* all_distances,
+        const typename C::T* all_qualities,
+        const idx_t* all_labels,
+        typename C::T* distances,
+        typename C::T* qualities,
+        idx_t* labels) {
+    using distance_t = typename C::T;
+    if (k == 0) {
+        return;
+    }
+    long stride = n * k;
+#pragma omp parallel if (n * nshard * k > 100000)
+    {
+        std::vector<int> buf(2 * nshard);
+        // index in each shard's result list
+        int* pointer = buf.data();
+        // (shard_ids, heap_vals): heap that indexes
+        // shard -> current distance for this shard
+        int* shard_ids = pointer + nshard;
+        std::vector<distance_t> buf2(nshard);
+        distance_t* heap_vals = buf2.data();
+        std::vector<distance_t> buf3(nshard);
+        distance_t* heap_quas = buf3.data();
+#pragma omp for
+        for (long i = 0; i < n; i++) {
+            // the heap maps values to the shard where they are
+            // produced.
+            const distance_t* D_in = all_distances + i * k;
+            const idx_t* I_in = all_labels + i * k;
+            const distance_t* Q_in = all_qualities + i * k; 
+            int heap_size = 0;
+
+            // push the first element of each shard (if not -1)
+            for (long s = 0; s < nshard; s++) {
+                pointer[s] = 0;
+                if (I_in[stride * s] >= 0) {
+                    heap_push_quality<C>(
+                            ++heap_size,
+                            heap_vals,
+                            shard_ids,
+                            heap_quas,
+                            D_in[stride * s],
+                            s,
+                            Q_in[stride * s]);
+                }
+            }
+
+            distance_t* D = distances + i * k;
+            idx_t* I = labels + i * k;
+            distance_t* Q = qualities + i * k;
+
+            int j;
+            for (j = 0; j < k && heap_size > 0; j++) {
+                // pop element from best shard
+                int s = shard_ids[0]; // top of heap
+                int& p = pointer[s];
+                D[j] = heap_vals[0];
+                I[j] = I_in[stride * s + p];
+                Q[j] = heap_quas[0];
+
+                // pop from shard, advance pointer for this shard
+                heap_pop_quality<C>(heap_size--, heap_vals, shard_ids, heap_quas);
+                p++;
+                if (p < k && I_in[stride * s + p] >= 0) {
+                    heap_push_quality<C>(
+                            ++heap_size,
+                            heap_vals,
+                            shard_ids,
+                            heap_quas,
+                            D_in[stride * s + p],
+                            s,
+                            Q_in[stride * s + p]);
+                }
+            }
+            for (; j < k; j++) {
+                I[j] = -1;
+                D[j] = C::Crev::neutral();
+                Q[j] = C::Crev::neutral();
+            }
+        }
+    }
+}
+
+// explicit instanciations
+#define INSTANTIATEQUALITY(C, distance_t)                                   \
+    template void merge_knn_results_quality<int64_t, C<distance_t, int>>(   \
+            size_t,                                                         \
+            size_t,                                                         \
+            int,                                                            \
+            const distance_t*,                                              \
+            const distance_t*,                                              \
+            const int64_t*,                                                 \
+            distance_t*,                                                    \
+            distance_t*,                                                    \
+            int64_t*);
+
+INSTANTIATEQUALITY(CMin, float);
+INSTANTIATEQUALITY(CMax, float);
+INSTANTIATEQUALITY(CMin, int32_t);
+INSTANTIATEQUALITY(CMax, int32_t);
 
 } // namespace faiss
