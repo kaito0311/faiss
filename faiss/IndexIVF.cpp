@@ -2095,7 +2095,6 @@ void IndexIVF::reset() {
 }
 
 void IndexIVF::set_include_quality(){
-    this->make_direct_map(true);
     invlists->set_include_quality(); 
 }
 size_t IndexIVF::remove_ids(const IDSelector& sel) {
