@@ -256,6 +256,7 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
         WRITE1(h);
         WRITE1(ails->nlist);
         WRITE1(ails->code_size);
+        WRITE1(ails->include_quality);
         // here we store either as a full or a sparse data buffer
         size_t n_non0 = 0;
         for (size_t i = 0; i < ails->nlist; i++) {
@@ -284,7 +285,6 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
             WRITEVECTOR(sizes);
         }
         // make a single contiguous data buffer (useful for mmapping)
-        WRITE1(ails->include_quality);
         
         for (size_t i = 0; i < ails->nlist; i++) {
             size_t n = ails->ids[i].size();

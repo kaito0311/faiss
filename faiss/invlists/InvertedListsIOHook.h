@@ -46,7 +46,8 @@ struct InvertedListsIOHook {
             int io_flags,
             size_t nlist,
             size_t code_size,
-            const std::vector<size_t>& sizes) const;
+            const std::vector<size_t>& sizes,
+            bool include_quality = false) const;
 
     virtual ~InvertedListsIOHook() {}
 
