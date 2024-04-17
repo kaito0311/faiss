@@ -242,11 +242,36 @@ def test_index_idmap():
     compare_search(index_flat_wo_qua, index_flat_w_qua)
 
 
+def test_reconstruct_quality():
+    name_factory = "IVF16,Flat"
+
+    index_flat_w_qua = faiss.index_factory(512, name_factory)
+    index_flat_w_qua.set_include_quality()
+    index_flat_w_qua.set_direct_map_type(faiss.DirectMap.Hashtable)
+
+    print(name_factory)
+
+    index_flat_w_qua.train(xb)
+    index_flat_w_qua.add_with_ids_with_quality(xb, r_qua, ids) 
+
+    D, I = index_flat_w_qua.search_with_quality(xb[:10], k, 0, 1.0)
+    
+    # for row in I:
+    #     for element in row:
+    #         r_recons = index_flat_w_qua.reconstruct_qua(int(ids[element]))
+    #         true_r_qua = r_qua[ids[element]]
+    #         print(r_recons, true_r_qua)
+    
+    print(name_factory)
+    
+
 
 
 
 
 if __name__ == "__main__":
+    test_reconstruct_quality()
+    exit()
 
     print("[INFO] Testing index flat L2: ")
     test_index_flat()

@@ -57,6 +57,16 @@ int main() {
 
     /* ==================== Search ondisk =======================*/
 
+    idx_t* I = new idx_t[k * nq];
+
+    float* D = new float[k * nq];
+
+    faiss::IndexFlatL2 quantizer(d, true);
+    quantizer.add_with_quality(nb, xb, r_qua);
+    quantizer.search_with_quality(nq, xq, k, 0.0, 1.0, D, I);
+    printf("size of float: %d \n", sizeof(float));
+    printf("size of float: %d \n", sizeof(idx_t));
+
     // std::string filename = "tmp_fiass";
 
     // faiss::IndexFlatL2 quantizer(d);
