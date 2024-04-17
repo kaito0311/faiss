@@ -202,6 +202,8 @@ struct IndexBinary {
      * parameters). Otherwise throw. */
     virtual void check_compatible_for_merge(
             const IndexBinary& otherIndex) const;
+
+    virtual void set_include_quality(); 
 };
 
 } // namespace faiss

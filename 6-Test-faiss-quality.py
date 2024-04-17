@@ -7,10 +7,10 @@ from typing import List
 np.random.seed(42) 
 
 d = 512
-nb = 1024
+nb = 4096
 xb = np.random.rand(nb, d).astype(np.float32)
 r_qua = np.random.rand(nb, 1).astype(np.float32)
-ids = range(nb)
+ids = np.array(range(nb))
 
 nlist = 16
 k = 5
@@ -74,25 +74,18 @@ def merge_ondisk(
 
 def compare_search(index_wo_qua, index_w_q, qua_1 = False, qua_2 = True):
     if qua_1: 
-        print("1")
         D1, I1 = index_wo_qua.search_with_quality(xb[:10], k, 0, 1.0)
-        print("1")
     else: 
         D1, I1 = index_wo_qua.search(xb[:10], k)
     
     if qua_2: 
-        print("1")
-        ivf = faiss.extract_index_ivf(index_w_q) 
-        print(ivf.invlists.include_quality)
         D2, I2 = index_w_q.search_with_quality(xb[:10], k, 0, 1.0)
-        print("1")
     else: 
         D2, I2 = index_w_q.search(xb[:10], k)
         
 
     assert np.sum(I1 - I2) == 0.0
     assert np.sum(D1 - D2) == 0.0
-
 
 def test_index_flat():
     # Train 
@@ -124,7 +117,6 @@ def test_index_flat():
     compare_search(backup_index_flat_wo_qua, index_flat_w_qua)
     compare_search(index_flat_wo_qua, index_flat_w_qua) 
     
-
 def test_index_ivfflat(): 
 
     # Train 
@@ -167,10 +159,6 @@ def test_index_ivfflat_ondisk_w_qua():
     index_flat_w_qua = faiss.index_factory(d, "IVF16,SQfp16")
     index_flat_w_qua.set_include_quality()
     # index_flat_w_qua = faiss.IndexIDMap(index_flat_w_qua)
-
-
-    # Search 
-
     index_flat_w_qua.train(xb) 
     
     index_ivf_part = faiss.extract_index_ivf(index_flat_w_qua) 
@@ -178,13 +166,13 @@ def test_index_ivfflat_ondisk_w_qua():
     clustering_index.reset() 
     index_ivf_part.clustering_index = clustering_index
 
-    if not index_flat_w_qua.is_trained: 
+    if index_flat_w_qua.is_trained is False: 
         index_flat_w_qua.train(xb) 
     
     os.makedirs(folder_save_ondisk, exist_ok = True)
     os.makedirs(folder_save_onram_w_qua, exist_ok = True)
 
-    name = "index_ivfflat"
+    name = "index_ivfsq"
     faiss.write_index(index_flat_w_qua, os.path.join(folder_save_ondisk, name + ".bin"))
     
     del index_flat_w_qua
@@ -208,10 +196,8 @@ def test_index_ivfflat_ondisk_w_qua():
         os.path.join(folder_save_ondisk, name + ".ivfdata")
     )
     # exit()
+    print("[INFO] Write on disk index: ")
     faiss.write_index(index_flat_w_qua_only_trained, os.path.join(folder_save_ondisk, name + ".bin"))
-
-    faiss.read_index(os.path.join(folder_save_ondisk, name + ".bin")),
-
     compare_search(
         faiss.read_index(os.path.join(folder_save_onram_w_qua, name + ".bin")),
         faiss.read_index(os.path.join(folder_save_ondisk, name + ".bin")),
@@ -219,15 +205,57 @@ def test_index_ivfflat_ondisk_w_qua():
         True
     )
 
+def test_index_idmap(): 
+
+    # Train 
+    index_flat_wo_qua = faiss.index_factory(512, "IDMap,SQfp16")
+
+    index_flat_w_qua = faiss.index_factory(512, "IDMap,SQfp16")
+    index_flat_w_qua.set_include_quality() 
+
+    # Search 
+    if not index_flat_w_qua.is_trained: 
+        index_flat_w_qua.train(xb) 
+    if not index_flat_wo_qua.is_trained: 
+        index_flat_wo_qua.train(xb) 
+    
+    index_flat_w_qua.add_with_ids_with_quality(xb, r_qua, ids)
+    index_flat_wo_qua.add_with_ids(xb, ids) 
+    compare_search(index_flat_wo_qua, index_flat_w_qua) 
+
+    # Save 
+    name_save= "index_flat.bin"
+    os.makedirs(folder_save_onram_wo_qua, exist_ok = True)
+    os.makedirs(folder_save_onram_w_qua, exist_ok = True)
+    faiss.write_index(index_flat_wo_qua, os.path.join(folder_save_onram_wo_qua, name_save))
+    faiss.write_index(index_flat_w_qua, os.path.join(folder_save_onram_w_qua, name_save))
+
+    backup_index_flat_wo_qua = index_flat_wo_qua 
+
+    del index_flat_w_qua
+    del index_flat_wo_qua 
+
+    index_flat_w_qua = faiss.read_index(os.path.join(folder_save_onram_w_qua, name_save))
+    index_flat_wo_qua = faiss.read_index(os.path.join(folder_save_onram_wo_qua, name_save))
+
+    compare_search(backup_index_flat_wo_qua, index_flat_w_qua)
+    compare_search(index_flat_wo_qua, index_flat_w_qua)
+
+
 
 
 
 
 if __name__ == "__main__":
-    # print("[INFO] Testing index flat L2: ")
-    # test_index_flat()
-    # print("[INFO] Testing index IVFFlatL2: ")
-    # test_index_ivfflat()
 
+    print("[INFO] Testing index flat L2: ")
+    test_index_flat()
+
+    print("[INFO] Testing index IVFFlatL2: ")
+    test_index_ivfflat()
+
+    print("[INFO] Testing index IVFFSQ ondisk: ")
     test_index_ivfflat_ondisk_w_qua()
 
+    print("[INFO] Testing index IDMap: ")
+    test_index_idmap()

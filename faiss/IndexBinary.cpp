@@ -141,4 +141,8 @@ void IndexBinary::check_compatible_for_merge(
     FAISS_THROW_MSG("check_compatible_for_merge() not implemented");
 }
 
+void IndexBinary::set_include_quality() {
+    FAISS_THROW_MSG("set_include_quality not implemented");
+}
+
 } // namespace faiss

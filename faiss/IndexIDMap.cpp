@@ -255,6 +255,11 @@ void IndexIDMapTemplate<IndexT>::range_search(
 }
 
 template <typename IndexT>
+void IndexIDMapTemplate<IndexT>::set_include_quality() {
+    index->set_include_quality();
+}
+
+template <typename IndexT>
 size_t IndexIDMapTemplate<IndexT>::remove_ids(const IDSelector& sel) {
     // remove in sub-index first
     IDSelectorTranslated sel2(id_map, &sel);

@@ -198,6 +198,10 @@ void Index::sa_qua_decode(idx_t, const uint8_t*, float*) const {
     FAISS_THROW_MSG("standalone codec decode for quality score not implemented for this type of index");
 }
 
+void Index::set_include_quality() {
+    FAISS_THROW_MSG("set_include_quality is not implemented for this type of index");
+}
+
 namespace {
 
 // storage that explicitly reconstructs vectors before computing distances

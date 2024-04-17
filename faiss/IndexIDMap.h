@@ -69,7 +69,7 @@ struct IndexIDMapTemplate : IndexT {
             const SearchParameters* params = nullptr) const override;
 
     void train(idx_t n, const component_t* x) override;
-
+    void set_include_quality();
     void reset() override;
 
     /// remove ids adapted to IndexFlat

@@ -75,11 +75,11 @@ int main() {
     // index.search(nq, xq, k, D, I);
 
     // faiss::Index* index = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/ondisk/index_ivfsq.bin");
-    faiss::Index* index = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/onram/index_ivfsq.bin",
-                                            faiss::IO_FLAG_MMAP);
-    const faiss::IndexIVFScalarQuantizer* ivsc = dynamic_cast<const faiss::IndexIVFScalarQuantizer*>(index);
-    // index->add_with_ids(nb, xb, ids);
-    printf("[INFO] Read done\n");
+    // faiss::Index* index = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/onram/index_ivfsq.bin",
+    //                                         faiss::IO_FLAG_MMAP);
+    // const faiss::IndexIVFScalarQuantizer* ivsc = dynamic_cast<const faiss::IndexIVFScalarQuantizer*>(index);
+    // // index->add_with_ids(nb, xb, ids);
+    // printf("[INFO] Read done\n");
     // index->add_with_ids_with_quality(nb, xb, r_qua, ids);
     // faiss::write_index(index, "./indexflat.bin");
 
