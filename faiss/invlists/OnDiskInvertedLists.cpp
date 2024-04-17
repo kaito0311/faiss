@@ -774,6 +774,7 @@ void OnDiskInvertedListsIOHook::write(const InvertedLists* ils, IOWriter* f)
     WRITE1(h);
     WRITE1(ils->nlist);
     WRITE1(ils->code_size);
+    WRITE1(ils->include_quality);
     const OnDiskInvertedLists* od =
             dynamic_cast<const OnDiskInvertedLists*>(ils);
     // this is a POD object
@@ -794,11 +795,12 @@ void OnDiskInvertedListsIOHook::write(const InvertedLists* ils, IOWriter* f)
 InvertedLists* OnDiskInvertedListsIOHook::read(IOReader* f, int io_flags)
         const {
     
-    FAISS_THROW_MSG("OnDiskInvertedListsIOHook::read is not implemented");
+    // FAISS_THROW_MSG("OnDiskInvertedListsIOHook::read is not implemented");
     OnDiskInvertedLists* od = new OnDiskInvertedLists();
     od->read_only = io_flags & IO_FLAG_READ_ONLY;
     READ1(od->nlist);
     READ1(od->code_size);
+    READ1(od->include_quality);
     // this is a POD object
     READVECTOR(od->lists);
     {
