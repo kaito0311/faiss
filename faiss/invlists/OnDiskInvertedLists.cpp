@@ -415,7 +415,7 @@ const uint8_t* OnDiskInvertedLists::get_qualities(size_t list_no) const {
     }
 
     return (
-        const uint8_t*)(ptr + lists[list_no].offset + (code_size + sizeof(size_t)) * lists[list_no].capacity);
+        const uint8_t*)(ptr + lists[list_no].offset + (code_size + sizeof(idx_t)) * lists[list_no].capacity);
 }
 
 void OnDiskInvertedLists::update_entries(
@@ -456,7 +456,6 @@ void OnDiskInvertedLists::update_entries_with_quality(
     
     uint8_t* qualities = const_cast<uint8_t*>(get_qualities(list_no));
     memcpy(qualities + offset * qua_size, qualities_in, qua_size * n_entry);
-    
 
 }
 
@@ -488,6 +487,7 @@ size_t OnDiskInvertedLists::add_entries_with_quality(
     resize_locked(list_no, n_entry + o);
     update_entries_with_quality(list_no, o, n_entry, ids, code, quality);
     locks->unlock_1(list_no);
+    return o;
 }
 
 
@@ -651,6 +651,15 @@ size_t OnDiskInvertedLists::merge_from(
         bool verbose) {
     FAISS_THROW_IF_NOT_MSG(
             totsize == 0, "works only on an empty InvertedLists");
+    
+    bool tmp_include_quality_tmp = ils[0]->include_quality; 
+    for (int i = 1; i < n_il; i++){
+        const InvertedLists* il = ils[i];
+        FAISS_THROW_IF_NOT(tmp_include_quality_tmp == il->include_quality); 
+    }
+    if (tmp_include_quality_tmp) {
+        this->set_include_quality();
+    }
 
     std::vector<size_t> sizes(nlist);
     for (int i = 0; i < n_il; i++) {
@@ -856,6 +865,7 @@ InvertedLists* OnDiskInvertedListsIOHook::read_ArrayInvertedLists(
     auto ails = new OnDiskInvertedLists();
     ails->nlist = nlist;
     ails->code_size = code_size;
+    ails->include_quality = include_quality;
     ails->read_only = true;
     ails->lists.resize(nlist);
 
@@ -887,7 +897,7 @@ InvertedLists* OnDiskInvertedListsIOHook::read_ArrayInvertedLists(
         l.size = l.capacity = sizes[i];
         l.offset = o;
         if(ails->include_quality){
-
+            o += l.size * (sizeof(idx_t) + ails->code_size + ails->qua_size);
         }
         else {
             o += l.size * (sizeof(idx_t) + ails->code_size);
@@ -895,7 +905,6 @@ InvertedLists* OnDiskInvertedListsIOHook::read_ArrayInvertedLists(
     }
     // resume normal reading of file
     fseek(fdesc, o, SEEK_SET);
-
     return ails;
 }
 

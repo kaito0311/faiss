@@ -85,7 +85,7 @@ void InvertedLists::reset() {
 
 
 bool InvertedLists::has_quality(size_t list_no) const {
-    FAISS_THROW_MSG("has_quality not implemented");
+    return include_quality;
 }
 
 size_t InvertedLists::quality_list_size(size_t list_no) const {
@@ -96,7 +96,7 @@ bool InvertedLists::get_include_quality() const {
     return include_quality;
 }
 void InvertedLists::set_include_quality() {
-    FAISS_THROW_MSG("set_include_quality not implemented");
+    include_quality = true; 
 }
 size_t InvertedLists::get_quality_size() const {
     FAISS_THROW_MSG("InvertedLists::get_quality_size not implemented");
@@ -118,7 +118,6 @@ size_t InvertedLists::add_entries_with_quality(size_t list_no, size_t n_entry, c
 }
 
 void InvertedLists::release_qualities(size_t list_no, const uint8_t* qualities) const {
-    FAISS_THROW_MSG("release_qualities with quality not implemented");
 } 
 
 const uint8_t* InvertedLists::get_single_quality(size_t list_no, size_t offset) const {

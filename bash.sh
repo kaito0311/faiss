@@ -1,6 +1,6 @@
 # Create anaconda environment
-conda create -n imint python=3.8
-conda activate imint
+conda create -n imint_ori python=3.8
+conda activate imint_ori
 conda install mkl mkl_fft
 # Install custom FAISS
 git clone https://github.com/NNDam/faiss.git

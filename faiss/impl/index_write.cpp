@@ -298,7 +298,6 @@ void write_InvertedLists(const InvertedLists* ils, IOWriter* f) {
         }
 
     } else {
-        printf("write_InvertedLists: InvertedListsIOHook \n");
         InvertedListsIOHook::lookup_classname(typeid(*ils).name())
                 ->write(ils, f);
     }
@@ -649,7 +648,6 @@ void write_index(const Index* idx, IOWriter* f) {
                     dynamic_cast<const IndexIVFScalarQuantizer*>(idx)) {
         uint32_t h = fourcc("IwSq");
         WRITE1(h);
-        printf("============= IwSq write index ============= \n");
         write_ivf_header(ivsc, f);
         write_ScalarQuantizer(&ivsc->sq, f);
         WRITE1(ivsc->code_size);

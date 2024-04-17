@@ -214,7 +214,6 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
             }
         }
 
-        printf("quality include: %d \n", ails->include_quality);
         for (size_t i = 0; i < ails->nlist; i++) {
             size_t n = ails->ids[i].size();
             if (n > 0) {
@@ -234,7 +233,7 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
         return ails;
 
     } else if (h == fourcc("ilar") && (io_flags & IO_FLAG_SKIP_IVF_DATA)) {
-        printf("io_flags & IO_FLAG_SKIP_IVF_DATA \n");
+        // printf("io_flags & IO_FLAG_SKIP_IVF_DATA \n");
         // code is always ilxx where xx is specific to the type of invlists we
         // want so we get the 16 high bits from the io_flag and the 16 low bits
         // as "il"
@@ -247,8 +246,9 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
         std::vector<size_t> sizes(nlist);
         read_ArrayInvertedLists_sizes(f, sizes);
         return InvertedListsIOHook::lookup(h2)->read_ArrayInvertedLists(
-                f, io_flags, nlist, code_size, sizes);
+                f, io_flags, nlist, code_size, sizes, include_quality);
     } else {
+
         return InvertedListsIOHook::lookup(h)->read(f, io_flags);
     }
 }
@@ -838,7 +838,6 @@ Index* read_index(IOReader* f, int io_flags) {
             READVECTOR(ail->codes[i]);
         idx = ivsc;
     } else if (h == fourcc("IwSQ") || h == fourcc("IwSq")) {
-        printf("============= IwSq read index =============\n");
         IndexIVFScalarQuantizer* ivsc = new IndexIVFScalarQuantizer();
         read_ivf_header(ivsc, f);
         read_ScalarQuantizer(&ivsc->sq, f);
@@ -958,7 +957,6 @@ Index* read_index(IOReader* f, int io_flags) {
         read_index_header(idxmap, f);
         idxmap->index = read_index(f, io_flags);
         idxmap->own_fields = true;
-        printf("eheh \n");
         READVECTOR(idxmap->id_map);
         if (is_map2) {
             static_cast<IndexIDMap2*>(idxmap)->construct_rev_map();
