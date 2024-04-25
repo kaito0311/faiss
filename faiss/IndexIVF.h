@@ -746,6 +746,16 @@ struct InvertedListScanner {
             const float upper_quality, 
             float* distances, 
             idx_t* labels,
+            size_t k) const; 
+    virtual size_t scan_codes_with_quality(
+            size_t n, 
+            const uint8_t* codes, 
+            const idx_t* ids, 
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality, 
+            float* distances, 
+            idx_t* labels,
             float* out_quas,
             size_t k) const; 
     

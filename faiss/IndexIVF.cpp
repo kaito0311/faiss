@@ -2511,6 +2511,53 @@ size_t InvertedListScanner::scan_codes_with_quality(
         const float upper_quality, 
         float* simi, 
         idx_t* idxi,
+        size_t k) const {
+
+    size_t nup = 0; 
+    const float* curr_qualities = (float*)qualities;
+    if (!keep_max) {
+        for (size_t j = 0; j < list_size; j++) {
+            float curr_quality = curr_qualities[0]; 
+            printf("code size: %ld \n", code_size);
+            printf("curr quality: %f \n", curr_quality);
+            if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
+                float dis = distance_to_code(codes);
+                if (dis < simi[0]) {
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    maxheap_replace_top(k, simi, idxi, dis, id);
+                    nup++;
+                }
+            }
+            codes += code_size;
+            curr_qualities += 1;
+        }
+    } else {
+        for (size_t j = 0; j < list_size; j++) {
+            float curr_quality = curr_qualities[0]; 
+            if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
+                float dis = distance_to_code(codes);
+                if (dis > simi[0]) {
+                    int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
+                    minheap_replace_top(k, simi, idxi, dis, id);
+                    nup++;
+            }
+            }
+            codes += code_size;
+            curr_qualities += 1;
+        }
+    }
+    return nup;
+}
+
+size_t InvertedListScanner::scan_codes_with_quality(
+        size_t list_size, 
+        const uint8_t* codes, 
+        const idx_t* ids, 
+        const uint8_t* qualities, 
+        const float lower_quality, 
+        const float upper_quality, 
+        float* simi, 
+        idx_t* idxi,
         float* quai,
         size_t k) const {
 

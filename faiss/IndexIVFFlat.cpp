@@ -250,6 +250,7 @@ struct IVFFlatScanner : InvertedListScanner {
             const float upper_quality,
             float* simi,
             idx_t* idxi,
+            float* quai,
             size_t k) const override {
         const float* list_vecs = (const float*)codes;
         const float* list_qualities = (const float*)qualities;
@@ -266,7 +267,7 @@ struct IVFFlatScanner : InvertedListScanner {
                         : fvec_L2sqr(xi, yj, d);
                 if (C::cmp(simi[0], dis)) {
                     int64_t id = store_pairs ? lo_build(list_no, j) : ids[j];
-                    heap_replace_top<C>(k, simi, idxi, dis, id);
+                    heap_replace_top_quality<C>(k, simi, idxi, quai, dis, id, curr_quality);
                     nup++;
                 }
             }
