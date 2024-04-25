@@ -42,8 +42,8 @@ std::vector<size_t> argsort(const std::vector<T>& vec) {
 int main() {
 
     int d = 64;      // dimension
-    int nb = 100; // database size
-    int nq = 10;  // nb of queries
+    int nb = 1000; // database size
+    int nq = 100;  // nb of queries
 
     std::mt19937 rng;
     std::uniform_real_distribution<> distrib;
@@ -74,8 +74,8 @@ int main() {
 
 
 
-    faiss::IndexFlatIP index(d, true); // call constructor
-    // faiss::IndexFlatL2 index(d, true); // call constructor
+    // faiss::IndexFlatIP index(d, true); // call constructor
+    faiss::IndexFlatL2 index(d, true); // call constructor
     printf("is_trained = %s\n", index.is_trained ? "true" : "false");
     // index.add(nb, xb); // add vectors to the index
     index.add_with_quality(nb, xb, r_qua);
@@ -129,7 +129,7 @@ int main() {
     }
     std::cout << std::endl;
 
-    int k = 5;
+    int k = 1;
 
     { // sanity check: search 5 first vectors of xb
         idx_t* I = new idx_t[k * 5];
@@ -166,9 +166,9 @@ int main() {
     // }
     // return 0;
     { // sanity check: search 5 first vectors of xb
-        idx_t* I = new idx_t[k * 5];
-        float* D = new float[k * 5];
-        float* Q = new float[k * 5];
+        idx_t* I = new idx_t[k * 101];
+        float* D = new float[k * 101];
+        float* Q = new float[k * 101];
 
         index.search_with_quality(5, xb, k, 0, 0.2, D, I, Q);
 

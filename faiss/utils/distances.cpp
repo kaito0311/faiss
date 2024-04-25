@@ -1569,13 +1569,13 @@ void knn_L2sqr_quality(
     }
 
     if (k == 1) {
-        SingleBestResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, ids);
+        SingleBestResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, ids, out_quas);
         knn_L2sqr_select_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, y_norm2, sel);
     } else if (k < distance_compute_min_k_reservoir) {
         HeapResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, ids, out_quas, k);
         knn_L2sqr_select_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, y_norm2, sel);
     } else {
-        ReservoirResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, out_quas, ids, k);
+        ReservoirResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, ids, out_quas, k);
         knn_L2sqr_select_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, y_norm2, sel);
     }
     

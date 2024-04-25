@@ -1259,24 +1259,22 @@ struct SingleBestResultHandlerQuality {
         }
     }
 
-    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab, const T lower_quality, const T upper_quality, const T* qualities) {
+    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
         for (int64_t i = i0; i < i1; i++) {
             const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
-            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
 
             auto& min_distance = this->dis_tab[i];
             auto& min_index = this->ids_tab[i];
-            auto& min_quality = this->qua_tab[i];
+            auto& min_quality = this->dis_tab[i];
 
             for (size_t j = j0; j < j1; j++) {
                 const T curr_quality_score = qualities[j];
                 if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
                     const T distance = dis_tab_i[j];
-                    const T quality = qua_tab_i[j];
                     if (C::cmp(min_distance, distance)) {
                         min_distance = distance;
                         min_index = j;
-                        min_quality = quality;
+                        min_quality = curr_quality_score;
                     }
                 }
             }

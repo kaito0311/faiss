@@ -576,6 +576,7 @@ void knn_L2sqr_by_idx_quality(
         size_t k,
         float* vals,
         int64_t* ids,
+        float* quas,
         int64_t ld_subset = -1);
 
 /***************************************************************************
