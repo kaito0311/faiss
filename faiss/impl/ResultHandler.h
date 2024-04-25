@@ -189,7 +189,7 @@ struct HeapResultHandlerQuality {
      */
 
     struct SingleResultHandlerQuality {
-        HeapResultHandler& hr;
+        HeapResultHandlerQuality& hr;
         size_t k;
 
         T* heap_dis;
@@ -218,7 +218,7 @@ struct HeapResultHandlerQuality {
 
         /// series of results for query i is done
         void end() {
-            heap_reorder<C>(k, heap_dis, heap_ids, heap_qua);
+            heap_reorder_quality<C>(k, heap_dis, heap_ids, heap_qua);
         }
     };
 
@@ -415,7 +415,6 @@ struct ReservoirTopNQuality {
     void add(T val, TI id, T qua) {
         if (C::cmp(threshold, val)) {
             if (i == capacity) {
-                FAISS_THROW_MSG("shrink_fuzzy not implement for ReservoirTopNQuality");
                 shrink_fuzzy();
             }
             vals[i] = val;
@@ -429,9 +428,8 @@ struct ReservoirTopNQuality {
     // between n and (capacity + n) / 2
     void shrink_fuzzy() {
         assert(i == capacity);
-        FAISS_THROW_MSG("shrink_fuzzy not implement for ReservoirTopNQuality");
-        threshold = partition_fuzzy<C>(
-                vals, ids, capacity, n, (capacity + n) / 2, &i);
+        threshold = partition_fuzzy_quality<C>(
+                vals, ids, quas, capacity, n, (capacity + n) / 2, &i);
     }
 
     void to_result(T* heap_dis, TI* heap_ids, T* heap_qua) const {
@@ -493,7 +491,7 @@ struct ReservoirResultHandlerQuality {
         std::vector<T> reservoir_quas;
         ReservoirTopNQuality<C> res1;
 
-        SingleResultHandlerQuality(ReservoirResultHandler& hr)
+        SingleResultHandlerQuality(ReservoirResultHandlerQuality& hr)
                 : hr(hr),
                   reservoir_dis(hr.capacity),
                   reservoir_ids(hr.capacity),
@@ -592,7 +590,7 @@ struct ReservoirResultHandlerQuality {
         for (int64_t i = i0; i < i1; i++) {
             ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
             const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
-            const T* qau_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
+            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
             for (size_t j = j0; j < j1; j++) {
                 T dis = dis_tab_i[j];
                 T qua = qua_tab_i[j];
@@ -610,19 +608,17 @@ struct ReservoirResultHandlerQuality {
         }
     }
     /// add results for query i0..i1 and j0..j1
-    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab, const T lower_quality, const T upper_quality, const T* qualities) {
+    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
         // maybe parallel for
 #pragma omp parallel for
         for (int64_t i = i0; i < i1; i++) {
             ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
             const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
-            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
             for (size_t j = j0; j < j1; j++) {
                 const T curr_quality_score = qualities[j];
                 if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
                     T dis = dis_tab_i[j];
-                    T qua = qua_tab_i[j];
-                    reservoir.add(dis, j, qua);
+                    reservoir.add(dis, j, curr_quality_score);
                 }
             }
         }
@@ -805,193 +801,6 @@ struct ReservoirResultHandler {
         for (size_t i = i0; i < i1; i++) {
             reservoirs[i - i0].to_result(
                     heap_dis_tab + i * k, heap_ids_tab + i * k);
-        }
-    }
-};
-
-template <class C>
-struct ReservoirResultHandlerQuality {
-    using T = typename C::T;
-    using TI = typename C::TI;
-
-    int nq;
-    T* heap_dis_tab;
-    TI* heap_ids_tab;
-    T* heap_qua_tab;
-
-    int64_t k;       // number of results to keep
-    size_t capacity; // capacity of the reservoirs
-
-    ReservoirResultHandlerQuality(
-            size_t nq,
-            T* heap_dis_tab,
-            TI* heap_ids_tab,
-            T* heap_qua_tab,
-            size_t k)
-            : nq(nq),
-              heap_dis_tab(heap_dis_tab),
-              heap_ids_tab(heap_ids_tab),
-              heap_qua_tab(heap_qua_tab),
-              k(k) {
-        // double then round up to multiple of 16 (for SIMD alignment)
-        capacity = (2 * k + 15) & ~15;
-    }
-
-    /******************************************************
-     * API for 1 result at a time (each SingleResultHandler is
-     * called from 1 thread)
-     */
-
-    struct SingleResultHandlerQuality {
-        ReservoirResultHandlerQuality& hr;
-
-        std::vector<T> reservoir_dis;
-        std::vector<TI> reservoir_ids;
-        std::vector<T> reservoir_qua;
-        ReservoirTopNQuality<C> res1;
-
-        SingleResultHandlerQuality(ReservoirResultHandlerQuality& hr)
-                : hr(hr),
-                  reservoir_dis(hr.capacity),
-                  reservoir_ids(hr.capacity),
-                  reservoir_qua(hr.capacity) {}
-
-        size_t i;
-
-        /// begin results for query # i
-        void begin(size_t i) {
-            res1 = ReservoirTopNQuality<C>(
-                    hr.k,
-                    hr.capacity,
-                    reservoir_dis.data(),
-                    reservoir_ids.data(),
-                    reservoir_qua.data()
-                    );
-            this->i = i;
-        }
-
-        /// add one result for query i
-        void add_result(T dis, TI idx, T qua) {
-            res1.add(dis, idx, qua);
-        }
-        /// add one result for query i
-        void add_result_boundary(T dis, TI idx, T qua, T lower, T upper, T duplicate_thr, bool rm_duplicate) {
-            bool keep = true;
-            if (dis < lower){
-                keep = false;
-            };
-            if (dis > upper){
-                keep = false;
-            };
-            if (keep){
-                res1.add(dis, idx, qua);
-            };
-        }
-
-        /// series of results for query i is done
-        void end() {
-            T* heap_dis = hr.heap_dis_tab + i * hr.k;
-            TI* heap_ids = hr.heap_ids_tab + i * hr.k;
-            T* heap_qua = hr.heap_qua_tab + i * hr.k;
-            res1.to_result(heap_dis, heap_ids, heap_qua);
-        }
-    };
-
-    /******************************************************
-     * API for multiple results (called from 1 thread)
-     */
-
-    size_t i0, i1;
-
-    std::vector<T> reservoir_dis;
-    std::vector<TI> reservoir_ids;
-    std::vector<T> reservoir_qua;
-    std::vector<ReservoirTopNQuality<C>> reservoirs;
-
-    /// begin
-    void begin_multiple(size_t i0, size_t i1) {
-        this->i0 = i0;
-        this->i1 = i1;
-        reservoir_dis.resize((i1 - i0) * capacity);
-        reservoir_ids.resize((i1 - i0) * capacity);
-        reservoir_qua.resize((i1 - i0) * capacity);
-        reservoirs.clear();
-        for (size_t i = i0; i < i1; i++) {
-            reservoirs.emplace_back(
-                    k,
-                    capacity,
-                    reservoir_dis.data() + (i - i0) * capacity,
-                    reservoir_ids.data() + (i - i0) * capacity,
-                    reservoir_qua.data() + (i - i0) * capacity);
-        }
-    }
-
-    /// add results for query i0..i1 and j0..j1
-    void add_results(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab) {
-        // maybe parallel for
-#pragma omp parallel for
-        for (int64_t i = i0; i < i1; i++) {
-            ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
-            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
-            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
-            for (size_t j = j0; j < j1; j++) {
-                T dis = dis_tab_i[j];
-                T qua = qua_tab_i[j];
-                reservoir.add(dis, j, qua);
-            }
-        }
-    }
-
-    /// add results for query i0..i1 and j0..j1
-    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
-        // maybe parallel for
-#pragma omp parallel for
-        for (int64_t i = i0; i < i1; i++) {
-            ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
-            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
-            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
-            for (size_t j = j0; j < j1; j++) {
-                T dis = dis_tab_i[j];
-                T qua = qua_tab_i[j];
-                bool keep = true;
-                if (dis < lower){
-                    keep = false;
-                };
-                if (dis > upper){
-                    keep = false;
-                };
-                if (keep){
-                    reservoir.add(dis, j, qua);
-                };
-            }
-        }
-    }
-    /// add results for query i0..i1 and j0..j1
-    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab, const T lower_quality, const T upper_quality, const T* qualities) {
-        // maybe parallel for
-#pragma omp parallel for
-        for (int64_t i = i0; i < i1; i++) {
-            ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
-            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
-            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
-            for (size_t j = j0; j < j1; j++) {
-                const T curr_quality_score = qualities[j];
-                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
-                    T dis = dis_tab_i[j];
-                    T qua = qua_tab_i[j];
-                    reservoir.add(dis, j, qua);
-                }
-            }
-        }
-    }
-
-
-    /// series of results for queries i0..i1 is done
-    void end_multiple() {
-        // maybe parallel for
-        for (size_t i = i0; i < i1; i++) {
-            reservoirs[i - i0].to_result(
-                    heap_dis_tab + i * k, heap_ids_tab + i * k, heap_qua_tab + i * k);
         }
     }
 };
@@ -1345,7 +1154,7 @@ struct SingleBestResultHandlerQuality {
         T min_qua;
         size_t current_idx = 0;
 
-        SingleBestResultHandlerQuality(SingleBestResultHandlerQuality& hr) : hr(hr) {}
+        SingleResultHandlerQuality(SingleBestResultHandlerQuality& hr) : hr(hr) {}
 
         /// begin results for query # i
         void begin(const size_t current_idx) {

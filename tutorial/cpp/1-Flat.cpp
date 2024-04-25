@@ -74,13 +74,11 @@ int main() {
 
 
 
-    // faiss::IndexFlatIP index(d); // call constructor
-    faiss::IndexFlatL2 index(d, true); // call constructor
-    faiss::IndexFlatL2 index2(d, true); // call constructor
+    faiss::IndexFlatIP index(d, true); // call constructor
+    // faiss::IndexFlatL2 index(d, true); // call constructor
     printf("is_trained = %s\n", index.is_trained ? "true" : "false");
     // index.add(nb, xb); // add vectors to the index
-    index.add(nb, xb, r_qua);
-    index2.add(nb, xb, r_qua);
+    index.add_with_quality(nb, xb, r_qua);
     printf("%ld ", index.ntotal);
     printf("ntotal = %zd\n", index.ntotal);
 
@@ -93,7 +91,7 @@ int main() {
     // }
 
     /* Check merge and reset function */
-    index.merge_from(index2, 0); 
+
 
     /* Check reconstruct vector*/
 
@@ -136,6 +134,7 @@ int main() {
     { // sanity check: search 5 first vectors of xb
         idx_t* I = new idx_t[k * 5];
         float* D = new float[k * 5];
+        
 
         index.search(5, xb, k, D, I);
 
@@ -169,8 +168,9 @@ int main() {
     { // sanity check: search 5 first vectors of xb
         idx_t* I = new idx_t[k * 5];
         float* D = new float[k * 5];
+        float* Q = new float[k * 5];
 
-        index.search_with_quality(5, xb, k, 0, 0.2, D, I);
+        index.search_with_quality(5, xb, k, 0, 0.2, D, I, Q);
 
         // print results
         printf("I=\n");
@@ -178,6 +178,7 @@ int main() {
             for (int j = 0; j < k; j++){
                 printf("%5zd ", I[i * k + j]);
                 printf("%5g ", resconstruc_vector[(I[i * k + j])]);
+                printf("%5g ", Q[i * k + j]);
             }
                 
             printf("\n");
