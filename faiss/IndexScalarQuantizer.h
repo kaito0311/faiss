@@ -75,6 +75,7 @@ struct IndexScalarQuantizer : IndexFlatCodes {
             const float upper_quality, 
             float* distances,
             idx_t* labels,
+            float* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     FlatCodesDistanceComputer* get_FlatCodesDistanceComputer() const override;
@@ -134,7 +135,7 @@ struct IndexIVFScalarQuantizer : IndexIVF {
             const idx_t* xids,
             const idx_t* precomputed_idx) override;
 
-    void add_core(
+    void add_core_with_quality(
             idx_t n,
             const float* x,
             const float* r_qua,
@@ -150,7 +151,7 @@ struct IndexIVFScalarQuantizer : IndexIVF {
 
     void reconstruct_qua_from_offset(int64_t list_no, int64_t offset, float* qua_recons)
             const override;
-            
+
     /* standalone codec interface */
     void sa_decode(idx_t n, const uint8_t* bytes, float* x) const override;
 };

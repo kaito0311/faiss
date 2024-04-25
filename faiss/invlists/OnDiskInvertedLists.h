@@ -24,7 +24,7 @@ struct LockLevels;
 
 struct OnDiskOneList {
     size_t size;     // size of inverted list (entries)
-    size_t capacity; // allocated size (entries)
+    size_t capacity; // allocated size (entries) int; number of element 
     size_t offset;   // offset in buffer (bytes)
     OnDiskOneList();
 };
@@ -83,7 +83,8 @@ struct OnDiskInvertedLists : InvertedLists {
     size_t list_size(size_t list_no) const override;
     const uint8_t* get_codes(size_t list_no) const override;
     const idx_t* get_ids(size_t list_no) const override;
-
+    const uint8_t* get_qualities(size_t list_no) const override; 
+    
     size_t add_entries(
             size_t list_no,
             size_t n_entry,
@@ -97,6 +98,21 @@ struct OnDiskInvertedLists : InvertedLists {
             const idx_t* ids,
             const uint8_t* code) override;
 
+    size_t add_entries_with_quality(
+            size_t list_no,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code,
+            const uint8_t* quality) override;
+
+    void update_entries_with_quality(
+            size_t list_no,
+            size_t offset,
+            size_t n_entry,
+            const idx_t* ids,
+            const uint8_t* code,
+            const uint8_t* quality) override;
+        
     void resize(size_t list_no, size_t new_size) override;
 
     // copy all inverted lists into *this, in compact form (without
@@ -147,7 +163,8 @@ struct OnDiskInvertedListsIOHook : InvertedListsIOHook {
             int io_flags,
             size_t nlist,
             size_t code_size,
-            const std::vector<size_t>& sizes) const override;
+            const std::vector<size_t>& sizes,
+            bool include_quality = false) const override;
 };
 
 } // namespace faiss

@@ -51,15 +51,17 @@ int main(){
     int nlist = 10;
     int k = 4;
 
-    faiss::IndexFlatL2 quantizer(d);
-    faiss::IndexIVFScalarQuantizer index_scalar(&quantizer, d, nlist, true, faiss::ScalarQuantizer::QT_fp16);
-    faiss::IndexIDMap index(&index_scalar);
+    // faiss::IndexFlatL2 quantizer(d);
+    // faiss::IndexIVFScalarQuantizer index(&quantizer, d, nlist, true, faiss::ScalarQuantizer::QT_fp16);
+    // index.make_direct_map(true);
+    // index.set_direct_map_type(faiss::DirectMap::Hashtable);
 
-    // faiss::IndexScalarQuantizer index(d, true, faiss::ScalarQuantizer::QT_fp16);
+    faiss::IndexScalarQuantizer index_scalar(d, true, faiss::ScalarQuantizer::QT_fp16);
+    faiss::IndexIDMap2 index(&index_scalar);
 
     index.train(nb, xb);
     // index.add(nb, xb);
-    index.add_with_ids(nb, xb, r_qua, ids);
+    index.add_with_ids_with_quality(nb, xb, r_qua, ids);
     // index.make_direct_map(true);
 
 
@@ -87,6 +89,8 @@ int main(){
     {
         idx_t* I = new idx_t[k * nq];
         float* D = new float[k * nq];
+        float* Q = new float[k * nq];
+
         // index.nprobe = 10; 
         index.search(nq, xq, k, D, I);
         printf("I=\n");
@@ -96,19 +100,23 @@ int main(){
             printf("\n");
         }
 
-        index.search_with_quality(nq, xq, k, 0, 0.5, D, I);
+        index.search_with_quality(nq, xq, k, 0, 0.5, D, I, Q);
 
         printf("I=\n");
         for (int i = nq - 5; i < nq; i++) {
             for (int j = 0; j < k; j++){
-                // index.reconstruct_qua(I[i * k + j], qua_reconstruct);
-                printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
+                float* qua_reconstruct = new float[10];
+                index.reconstruct_qua(I[i * k + j], qua_reconstruct);
+                printf("%5zd %5g %5g %5g ", I[i * k + j], r_qua[(I[i*k +j])%10000], qua_reconstruct[0], Q[i * k + j]);
             }
             printf("\n");
         }
     }
 
     printf("Hello world!!!\n");
+    float* qua_reconstruct = new float[10];
+    index.reconstruct_qua(10, qua_reconstruct);
+
     return 0;
     
 }

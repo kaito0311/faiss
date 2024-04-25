@@ -7,6 +7,7 @@
 #include <faiss/IndexIDMap.h>
 #include <faiss/IndexIVFFlat.h>
 #include <faiss/invlists/InvertedLists.h>
+#include <faiss/invlists/OnDiskInvertedLists.h>
 #include <faiss/impl/ScalarQuantizer.h>
 #include <faiss/IndexScalarQuantizer.h>
 #include <faiss/AutoTune.h>
@@ -22,7 +23,7 @@ int main() {
 
 
 
-    int d = 64;      // dimension
+    int d = 512;      // dimension
     int nb = 10000; // database size
     int nq = 1000;  // nb of queries
 
@@ -54,8 +55,56 @@ int main() {
     int nlist = 10;
     int k = 4;
 
+    /* ==================== Search ondisk =======================*/
 
-    faiss::Index* index = faiss::read_index("./index_ivf_sq_idmap.bin", 0);
+    idx_t* I = new idx_t[k * nq];
+
+    float* D = new float[k * nq];
+
+    faiss::IndexFlatL2 quantizer(d, true);
+    quantizer.add_with_quality(nb, xb, r_qua);
+    quantizer.search_with_quality(nq, xq, k, 0.0, 1.0, D, I);
+    printf("size of float: %d \n", sizeof(float));
+    printf("size of float: %d \n", sizeof(idx_t));
+
+    // std::string filename = "tmp_fiass";
+
+    // faiss::IndexFlatL2 quantizer(d);
+
+    // faiss::IndexIVFFlat index(&quantizer, d, nlist);
+
+    // faiss::OnDiskInvertedLists ivf(
+    //                 index.nlist, index.code_size, filename.c_str());
+
+    // index.replace_invlists(&ivf);
+
+    // idx_t* I = new idx_t[k * nq];
+
+    // float* D = new float[k * nq];
+
+    // index.search(nq, xq, k, D, I);
+
+    // faiss::Index* index = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/ondisk/index_ivfsq.bin");
+    // faiss::Index* index = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/onram/index_ivfsq.bin",
+    //                                         faiss::IO_FLAG_MMAP);
+    // const faiss::IndexIVFScalarQuantizer* ivsc = dynamic_cast<const faiss::IndexIVFScalarQuantizer*>(index);
+    // // index->add_with_ids(nb, xb, ids);
+    // printf("[INFO] Read done\n");
+    // index->add_with_ids_with_quality(nb, xb, r_qua, ids);
+    // faiss::write_index(index, "./indexflat.bin");
+
+    // faiss::Index* index2 = faiss::read_index("/home1/data/tanminh/dev_faiss/test_faiss/saved/ondisk/index_ivfsq.bin", 0);
+
+
+
+
+
+
+
+    /* ===============================================================*/
+
+
+    // faiss::Index* index = faiss::read_index("./index_ivf_sq_idmap.bin", 0);
     // const faiss::IndexIVFScalarQuantizer* idxf = dynamic_cast<const faiss::IndexIVFScalarQuantizer*>(index);
     // faiss::IndexScalarQuantizer index(d, true, faiss::ScalarQuantizer::QT_fp16);
     // faiss::IndexFlatL2 quantizer(d);
@@ -70,33 +119,33 @@ int main() {
     // faiss::write_index(&index, "./index_ivf_sq_idmap.bin");
     // return 0; 
 
-    idx_t* I = new idx_t[k * nq];
-    float* D = new float[k * nq];
-    index->search(nq, xq, k, D, I);
+    // idx_t* I = new idx_t[k * nq];
+    // float* D = new float[k * nq];
+    // index->search(nq, xq, k, D, I);
 
-    printf("I=\n");
-    for (int i = nq - 5; i < nq; i++) {
-        for (int j = 0; j < k; j++)
-            printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
-        printf("\n");
-    }
+    // printf("I=\n");
+    // for (int i = nq - 5; i < nq; i++) {
+    //     for (int j = 0; j < k; j++)
+    //         printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
+    //     printf("\n");
+    // }
 
-    // idxf->nprobe = 10;
-    faiss::ParameterSpace pspace = faiss::ParameterSpace();
-    pspace.set_index_parameter(index, "nprobe", 10);
+    // // idxf->nprobe = 10;
+    // faiss::ParameterSpace pspace = faiss::ParameterSpace();
+    // pspace.set_index_parameter(index, "nprobe", 10);
 
-    index->search_with_quality(nq, xq, k, 0, 0.5, D, I);
-    printf("I=\n");
-    for (int i = nq - 5; i < nq; i++) {
-        for (int j = 0; j < k; j++){
-            // index.reconstruct_qua(I[i * k + j], qua_reconstruct);
-            printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
-        }
-        printf("\n");
-    }
+    // index->search_with_quality(nq, xq, k, 0, 0.5, D, I);
+    // printf("I=\n");
+    // for (int i = nq - 5; i < nq; i++) {
+    //     for (int j = 0; j < k; j++){
+    //         // index.reconstruct_qua(I[i * k + j], qua_reconstruct);
+    //         printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
+    //     }
+    //     printf("\n");
+    // }
 
 
-    return 0; 
+    // return 0; 
 
 
     // /* Test index write*/ 

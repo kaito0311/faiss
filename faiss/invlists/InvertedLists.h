@@ -39,6 +39,7 @@ struct InvertedLists {
     size_t code_size; ///< code size per vector in bytes
     bool use_iterator;
     bool include_quality = false; 
+    static const size_t qua_size = sizeof(float); ///< size of quality
 
     InvertedLists(size_t nlist, size_t code_size);
     InvertedLists(size_t nlist, size_t code_size, bool include_quaity_in);
@@ -67,6 +68,7 @@ struct InvertedLists {
 
     /// function just for check code
     virtual bool get_include_quality() const; 
+    virtual void set_include_quality(); 
     virtual size_t get_quality_size() const; 
     virtual size_t get_codes_size() const; 
 
@@ -125,7 +127,7 @@ struct InvertedLists {
     virtual size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code);
     
     /// add one entry to an inverted list with quality
-    virtual size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality);
+    virtual size_t add_entry_with_quality(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality);
 
     virtual size_t add_entries(
             size_t list_no,
@@ -134,7 +136,7 @@ struct InvertedLists {
             const uint8_t* code) = 0;
 
     /// add entries with qualities
-    virtual size_t add_entries(
+    virtual size_t add_entries_with_quality(
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
@@ -147,7 +149,7 @@ struct InvertedLists {
             idx_t id,
             const uint8_t* code);
 
-    virtual void update_entry(
+    virtual void update_entry_with_quality(
             size_t list_no,
             size_t offset,
             idx_t id,
@@ -161,7 +163,7 @@ struct InvertedLists {
             const idx_t* ids,
             const uint8_t* code) = 0;
 
-    virtual void update_entries(
+    virtual void update_entries_with_quality(
             size_t list_no,
             size_t offset,
             size_t n_entry,
@@ -310,7 +312,7 @@ struct ArrayInvertedLists : InvertedLists {
 
     // qualities array 
     std::vector<std::vector<uint8_t>> qualities; 
-    static const size_t qua_size = sizeof(float); ///< size of quality
+    
     
 
     ArrayInvertedLists(size_t nlist, size_t code_size);
@@ -320,6 +322,7 @@ struct ArrayInvertedLists : InvertedLists {
     const uint8_t* get_codes(size_t list_no) const override;
     const idx_t* get_ids(size_t list_no) const override;
     bool get_include_quality() const override; 
+    void set_include_quality(); 
     size_t get_quality_size() const override;
     size_t get_codes_size() const override;
 
@@ -343,23 +346,23 @@ struct ArrayInvertedLists : InvertedLists {
     const uint8_t* get_qualities(size_t list_no) const override;
     void release_qualities(size_t list_no, const uint8_t* qualities) const override;
     const uint8_t* get_single_quality(size_t list_no, size_t offset) const override;
-    size_t add_entry(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) override;
+    size_t add_entry_with_quality(size_t list_no, idx_t theid, const uint8_t* code, const uint8_t* quality) override;
     void merge_from(InvertedLists* oivf, size_t add_id);
 
         
-    size_t add_entries(
+    size_t add_entries_with_quality(
             size_t list_no,
             size_t n_entry,
             const idx_t* ids,
             const uint8_t* code,
             const uint8_t* quality) override;
-    void update_entry(
+    void update_entry_with_quality(
             size_t list_no,
             size_t offset,
             idx_t id,
             const uint8_t* code, 
             const uint8_t* quality) override;
-    void update_entries(
+    void update_entries_with_quality(
             size_t list_no,
             size_t offset,
             size_t n_entry,

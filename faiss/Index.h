@@ -113,7 +113,7 @@ struct Index {
      * @param x      input matrix, size n * d
      * @param r_que  input raw quality array, size n * 1 (1 as float)
      */
-    virtual void add(idx_t n, const float* x, const float* r_qua); /// r_qua: raw qualtity array
+    virtual void add_with_quality(idx_t n, const float* x, const float* r_qua); /// r_qua: raw qualtity array
 
     /** Same as add, but stores xids instead of sequential ids.
      *
@@ -126,7 +126,7 @@ struct Index {
      * @param xids      if non-null, ids to store for the vectors (size n)
      */
     virtual void add_with_ids(idx_t n, const float* x, const idx_t* xids);
-    virtual void add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids);
+    virtual void add_with_ids_with_quality(idx_t n, const float* x, const float* r_qua, const idx_t* xids);
 
     /** query n vectors of dimension d to the index.
      *
@@ -204,6 +204,7 @@ struct Index {
      * @param upper_quality     upper bound score quality, float
      * @param distances         output pairwise distances, size n*k
      * @param labels            output labels of the NNs, size n*k
+     * @param out_quas          output qualities of the NNs, size n*k
      */
     virtual void search_with_quality(
             idx_t n,
@@ -213,6 +214,16 @@ struct Index {
             const float upper_quality, 
             float* distances,
             idx_t* labels,
+            const SearchParameters* params = nullptr) const; 
+    virtual void search_with_quality(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            const float lower_quality,
+            const float upper_quality, 
+            float* distances,
+            idx_t* labels,
+            float* out_quas,
             const SearchParameters* params = nullptr) const; 
  
 
@@ -392,6 +403,8 @@ struct Index {
      * trained in the same way and have the same
      * parameters). Otherwise throw. */
     virtual void check_compatible_for_merge(const Index& otherIndex) const;
+
+    virtual void set_include_quality(); 
 };
 
 } // namespace faiss

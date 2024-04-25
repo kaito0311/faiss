@@ -198,46 +198,57 @@ InvertedLists* read_InvertedLists(IOReader* f, int io_flags) {
         auto ails = new ArrayInvertedLists(0, 0);
         READ1(ails->nlist);
         READ1(ails->code_size);
+        READ1(ails->include_quality);
         ails->ids.resize(ails->nlist);
         ails->codes.resize(ails->nlist);
-        ails->qualities.resize(ails->nlist);
+        if (ails->include_quality){
+            ails->qualities.resize(ails->nlist);
+        }
         std::vector<size_t> sizes(ails->nlist);
         read_ArrayInvertedLists_sizes(f, sizes);
         for (size_t i = 0; i < ails->nlist; i++) {
             ails->ids[i].resize(sizes[i]);
             ails->codes[i].resize(sizes[i] * ails->code_size);
-            ails->qualities[i].resize(sizes[i] * ails->qua_size);
+            if (ails->include_quality){
+                ails->qualities[i].resize(sizes[i] * ails->qua_size);
+            }
         }
+
         for (size_t i = 0; i < ails->nlist; i++) {
             size_t n = ails->ids[i].size();
             if (n > 0) {
                 READANDCHECK(ails->codes[i].data(), n * ails->code_size);
                 READANDCHECK(ails->ids[i].data(), n);
-                READANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
+                if (ails->include_quality) {
+                    READANDCHECK(ails->qualities[i].data(), n * ails->qua_size);
+                }
             }
         }
 
-        READ1(ails->include_quality);
 
-        if (ails->include_quality == false) { 
-            ails->qualities.resize(0);
-        }
+        // if (ails->include_quality == false) { 
+        //     ails->qualities.resize(0);
+        // }
 
         return ails;
 
     } else if (h == fourcc("ilar") && (io_flags & IO_FLAG_SKIP_IVF_DATA)) {
+        // printf("io_flags & IO_FLAG_SKIP_IVF_DATA \n");
         // code is always ilxx where xx is specific to the type of invlists we
         // want so we get the 16 high bits from the io_flag and the 16 low bits
         // as "il"
         int h2 = (io_flags & 0xffff0000) | (fourcc("il__") & 0x0000ffff);
         size_t nlist, code_size;
+        bool include_quality;
         READ1(nlist);
         READ1(code_size);
+        READ1(include_quality);
         std::vector<size_t> sizes(nlist);
         read_ArrayInvertedLists_sizes(f, sizes);
         return InvertedListsIOHook::lookup(h2)->read_ArrayInvertedLists(
-                f, io_flags, nlist, code_size, sizes);
+                f, io_flags, nlist, code_size, sizes, include_quality);
     } else {
+
         return InvertedListsIOHook::lookup(h)->read(f, io_flags);
     }
 }

@@ -160,7 +160,7 @@ size_t DirectMap::remove_ids(const IDSelector& sel, InvertedLists* invlists) {
                 if (sel.is_member(idsi[j])) {
                     l--;
                     if (invlists->get_include_quality()) {
-                        invlists->update_entry(
+                        invlists->update_entry_with_quality(
                                 i,
                                 j,
                                 invlists->get_single_id(i, l),
@@ -204,7 +204,7 @@ size_t DirectMap::remove_ids(const IDSelector& sel, InvertedLists* invlists) {
                 if (offset < last) {
                     idx_t last_id = invlists->get_single_id(list_no, last);
                     if (invlists->get_include_quality()){
-                        invlists->update_entry(
+                        invlists->update_entry_with_quality(
                                 list_no,
                                 offset,
                                 last_id,

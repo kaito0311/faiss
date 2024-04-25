@@ -58,13 +58,25 @@ void Index::search_with_quality(
         const SearchParameters* params) const {
     FAISS_THROW_MSG("search with quality not implemented");
 }
+void Index::search_with_quality(
+        idx_t, /*n*/
+        const float*, /*x*/
+        idx_t, /*k*/
+        const float, /*lower_quality*/
+        const float, /*upper_quality*/
+        float*, /*distances*/
+        idx_t*, /*labels*/
+        float*, /*out_quas*/
+        const SearchParameters* params) const {
+    FAISS_THROW_MSG("search with quality not implemented");
+}
 
 void Index::assign(idx_t n, const float* x, idx_t* labels, idx_t k) const {
     std::vector<float> distances(n * k);
     search(n, x, k, distances.data(), labels);
 }
 
-void Index::add(
+void Index::add_with_quality(
     idx_t /*n*/,
     const float* /*x*/,
     const float* /*r_qua*/) {
@@ -78,7 +90,7 @@ void Index::add_with_ids(
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
 }
 
-void Index::add_with_ids(
+void Index::add_with_ids_with_quality(
         idx_t /*n*/,
         const float* /*x*/,
         const float* /*r_qua*/,
@@ -196,6 +208,10 @@ void Index::sa_decode(idx_t, const uint8_t*, float*) const {
 
 void Index::sa_qua_decode(idx_t, const uint8_t*, float*) const {
     FAISS_THROW_MSG("standalone codec decode for quality score not implemented for this type of index");
+}
+
+void Index::set_include_quality() {
+    FAISS_THROW_MSG("set_include_quality is not implemented for this type of index");
 }
 
 namespace {

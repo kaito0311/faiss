@@ -28,6 +28,16 @@ typename C::T partition_fuzzy(
         size_t q_max,
         size_t* q_out);
 
+template <class C>
+typename C::T partition_fuzzy_quality(
+        typename C::T* vals,
+        typename C::TI* ids,
+        typename C::T* quas,
+        size_t n,
+        size_t q_min,
+        size_t q_max,
+        size_t* q_out);
+
 /** simplified interface for when the parition is not fuzzy */
 template <class C>
 inline typename C::T partition(

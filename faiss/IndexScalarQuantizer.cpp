@@ -107,6 +107,7 @@ void IndexScalarQuantizer::search_with_quality(
         const float upper_quality,
         float* distances,
         idx_t* labels,
+        float* out_quas,
         const SearchParameters* params) const {
     const IDSelector* sel = params ? params->sel : nullptr;
 
@@ -127,20 +128,22 @@ void IndexScalarQuantizer::search_with_quality(
         for (idx_t i = 0; i < n; i++) {
             float* D = distances + k * i;
             idx_t* I = labels + k * i;
+            float* Q = out_quas + k * i; 
             // re-order heap
             if (metric_type == METRIC_L2) {
-                maxheap_heapify(k, D, I);
+                maxheap_heapify_quality(k, D, I, Q);
             } else {
-                minheap_heapify(k, D, I);
+                minheap_heapify_quality(k, D, I, Q);
             }
             scanner->set_query(x + i * d);
-            scanner->scan_codes_with_quality(ntotal, codes.data(), nullptr, qualities.data(), lower_quality, upper_quality, D, I, k);
+            scanner->scan_codes_with_quality(ntotal, codes.data(), nullptr, qualities.data(), 
+            lower_quality, upper_quality, D, I, Q, k);
 
             // re-order heap
             if (metric_type == METRIC_L2) {
-                maxheap_reorder(k, D, I);
+                maxheap_reorder_quality(k, D, I, Q);
             } else {
-                minheap_reorder(k, D, I);
+                minheap_reorder_quality(k, D, I, Q);
             }
         }
     }
@@ -386,7 +389,7 @@ void IndexIVFScalarQuantizer::add_core(
     ntotal += n;
 }
 
-void IndexIVFScalarQuantizer::add_core(
+void IndexIVFScalarQuantizer::add_core_with_quality(
         idx_t n,
         const float* x,
         const float* r_qua,
@@ -425,7 +428,7 @@ void IndexIVFScalarQuantizer::add_core(
                 memset(one_code.data(), 0, code_size);
                 squant->encode_vector(xi, one_code.data());
 
-                size_t ofs = invlists->add_entry(list_no, id, one_code.data(), (const uint8_t*)r_qua_i);
+                size_t ofs = invlists->add_entry_with_quality(list_no, id, one_code.data(), (const uint8_t*)r_qua_i);
 
                 dm_add.add(i, list_no, ofs);
                 nadd++;

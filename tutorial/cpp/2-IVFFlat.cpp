@@ -73,10 +73,10 @@ int main() {
     index.train(nb, xb);
     // index.make_direct_map(true);
     // index.set_direct_map_type(faiss::DirectMap::Hashtable);
-    index.add(nb, xb, r_qua);
+    index.add_with_quality(nb, xb, r_qua);
 
     index1.train(nb, xb);
-    index1.add(nb, xb, r_qua); 
+    index1.add_with_quality(nb, xb, r_qua); 
 
 
     // index.check_compatible_for_merge(index1);
@@ -125,6 +125,7 @@ int main() {
     { // search xq
         idx_t* I = new idx_t[k * nq];
         float* D = new float[k * nq];
+        float* Q = new float[k * nq];
 
         index.search(nq, xq, k, D, I);
 
@@ -146,13 +147,13 @@ int main() {
 
         // return 0; 
 
-        index.search_with_quality(nq, xq, k, 0, 0.5, D, I);
+        index.search_with_quality(nq, xq, k, 0, 0.5, D, I, Q);
 
         printf("I=\n");
         for (int i = nq - 5; i < nq; i++) {
             for (int j = 0; j < k; j++){
                 // index.reconstruct_qua(I[i * k + j], qua_reconstruct);
-                printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
+                printf("%5zd %5g %5g", I[i * k + j], r_qua[(I[i*k +j])%10000],  Q[i * k + j]);
             }
             printf("\n");
         }

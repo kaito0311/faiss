@@ -57,6 +57,7 @@ void IndexBinary::search_with_quality(
         const int32_t,
         int32_t*,
         idx_t*,
+        int32_t*,
         const SearchParameters*) const {
     FAISS_THROW_MSG("search_with_quality not implemented");
 }
@@ -67,7 +68,7 @@ void IndexBinary::assign(idx_t n, const uint8_t* x, idx_t* labels, idx_t k)
     search(n, x, k, distances.data(), labels);
 }
 
-void IndexBinary::add(idx_t, const uint8_t*, const uint8_t*) {
+void IndexBinary::add_with_quality(idx_t, const uint8_t*, const uint8_t*) {
     FAISS_THROW_MSG("add with quality not implemented for this type of index");
 }
 
@@ -75,7 +76,7 @@ void IndexBinary::add_with_ids(idx_t, const uint8_t*, const idx_t*) {
     FAISS_THROW_MSG("add_with_ids not implemented for this type of index");
 }
 
-void IndexBinary::add_with_ids(idx_t, const uint8_t*, const uint8_t*, const idx_t*) {
+void IndexBinary::add_with_ids_with_quality(idx_t, const uint8_t*, const uint8_t*, const idx_t*) {
     FAISS_THROW_MSG("add_with_ids with quality not implemented for this type of index");
 }
 
@@ -86,6 +87,10 @@ size_t IndexBinary::remove_ids(const IDSelector&) {
 
 void IndexBinary::reconstruct(idx_t, uint8_t*) const {
     FAISS_THROW_MSG("reconstruct not implemented for this type of index");
+}
+
+void IndexBinary::reconstruct_qua(idx_t, uint8_t*) const {
+    FAISS_THROW_MSG("reconstruct_qua not implemented for this type of index");
 }
 
 void IndexBinary::reconstruct_n(idx_t i0, idx_t ni, uint8_t* recons) const {
@@ -135,6 +140,10 @@ void IndexBinary::merge_from(
 void IndexBinary::check_compatible_for_merge(
         const IndexBinary& /* otherIndex */) const {
     FAISS_THROW_MSG("check_compatible_for_merge() not implemented");
+}
+
+void IndexBinary::set_include_quality() {
+    FAISS_THROW_MSG("set_include_quality not implemented");
 }
 
 } // namespace faiss

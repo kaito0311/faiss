@@ -61,6 +61,7 @@ struct IndexFlat : IndexFlatCodes {
             const float upper_quality, 
             float* distances,
             idx_t* labels,
+            float* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     void reconstruct(idx_t key, float* recons) const override;
@@ -153,7 +154,7 @@ struct IndexFlat1D : IndexFlatL2 {
     void update_permutation();
 
     void add(idx_t n, const float* x) override;
-    void add(idx_t n, const float* x, const float* r_qua) override;
+    void add_with_quality(idx_t n, const float* x, const float* r_qua) override;
 
     void reset() override;
 

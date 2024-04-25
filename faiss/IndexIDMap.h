@@ -31,12 +31,12 @@ struct IndexIDMapTemplate : IndexT {
     /// @param xids if non-null, ids to store for the vectors (size n)
     void add_with_ids(idx_t n, const component_t* x, const idx_t* xids)
             override;
-    void add_with_ids(idx_t n, const component_t* x, const component_t* r_qua, const idx_t* xids)
+    void add_with_ids_with_quality(idx_t n, const component_t* x, const component_t* r_qua, const idx_t* xids)
             override;
 
     /// this will fail. Use add_with_ids
     void add(idx_t n, const component_t* x) override;
-    void add(idx_t n, const component_t* x, const component_t* r_qua) override;
+    void add_with_quality(idx_t n, const component_t* x, const component_t* r_qua) override;
 
     void search(
             idx_t n,
@@ -66,10 +66,11 @@ struct IndexIDMapTemplate : IndexT {
             const distance_t upper_quality,
             distance_t* distances,
             idx_t* labels,
+            distance_t* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     void train(idx_t n, const component_t* x) override;
-
+    void set_include_quality();
     void reset() override;
 
     /// remove ids adapted to IndexFlat
@@ -112,9 +113,14 @@ struct IndexIDMap2Template : IndexIDMapTemplate<IndexT> {
     void add_with_ids(idx_t n, const component_t* x, const idx_t* xids)
             override;
 
+    void add_with_ids_with_quality(idx_t n, const component_t* x, const component_t* r_qua, const idx_t* xids)
+            override;
+
     size_t remove_ids(const IDSelector& sel) override;
 
     void reconstruct(idx_t key, component_t* recons) const override;
+
+    void reconstruct_qua(idx_t key, component_t* qua_recons) const override;
 
     /// check that the rev_map and the id_map are in sync
     void check_consistency() const;

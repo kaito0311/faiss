@@ -150,6 +150,7 @@ struct IndexIVFInterface : Level1Quantizer {
             const float upper_quality,
             float* distances,
             idx_t* labels,
+            float* out_quas,
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const = 0;
@@ -306,13 +307,13 @@ struct IndexIVF : Index, IndexIVFInterface {
     void add(idx_t n, const float* x) override;
 
     /// Calls add_with_ids with NULL ids
-    void add(idx_t n, const float* x, const float* r_qua) override; 
+    void add_with_quality(idx_t n, const float* x, const float* r_qua) override; 
 
     /// default implementation that calls encode_vectors
     void add_with_ids(idx_t n, const float* x, const idx_t* xids) override;
 
     /// default implementation that calls encode_vectors
-    void add_with_ids(idx_t n, const float* x, const float* r_qua, const idx_t* xids) override;
+    void add_with_ids_with_quality(idx_t n, const float* x, const float* r_qua, const idx_t* xids) override;
 
     /** Implementation of vector addition where the vector assignments are
      * predefined. The default implementation hands over the code extraction to
@@ -334,7 +335,7 @@ struct IndexIVF : Index, IndexIVFInterface {
      * @param precomputed_idx    quantization indices for the input vectors
      * (size n)
      */
-    virtual void add_core(
+    virtual void add_core_with_quality(
             idx_t n,
             const float* x,
             const float* r_qua,
@@ -367,7 +368,7 @@ struct IndexIVF : Index, IndexIVFInterface {
      *                   include the list ids in the code (in this case add
      *                   ceil(log8(nlist)) to the code size)
      */
-    virtual void encode_vectors(
+    virtual void encode_vectors_with_quality(
             idx_t n,
             const float* x,
             const float* r_qua,
@@ -400,6 +401,8 @@ struct IndexIVF : Index, IndexIVFInterface {
     /// can be redefined by subclasses to indicate how many training vectors
     /// they need
     virtual idx_t train_encoder_num_vectors() const;
+
+    void set_include_quality();
 
     void search_preassigned(
             idx_t n,
@@ -438,6 +441,7 @@ struct IndexIVF : Index, IndexIVFInterface {
             const float upper_quality,
             float* distances,
             idx_t* labels,
+            float* out_quas,
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const override;
@@ -489,6 +493,7 @@ struct IndexIVF : Index, IndexIVFInterface {
             const float upper_quality, 
             float* distances, 
             idx_t* labels, 
+            float* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     /** Get a scanner for this index (store_pairs means ignore labels)
@@ -728,6 +733,7 @@ struct InvertedListScanner {
      * @param upper_quality    upper bound quality to filter
      * @param distances         heap distances (size k)
      * @param labels            heap labels (size k)
+     * @param out_quas          heap quality (size k)
      * @param k                 heap size
      * @return number of heap updates performed
      */
@@ -741,12 +747,24 @@ struct InvertedListScanner {
             float* distances, 
             idx_t* labels,
             size_t k) const; 
+    virtual size_t scan_codes_with_quality(
+            size_t n, 
+            const uint8_t* codes, 
+            const idx_t* ids, 
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality, 
+            float* distances, 
+            idx_t* labels,
+            float* out_quas,
+            size_t k) const; 
     
     // same as scan_codes, using an iterator with quality. TODO: It's seem never call -> check it
     virtual size_t iterate_codes_with_quality(
             InvertedListsIterator* iterator,
             float* distances,
             idx_t* labels,
+            float* out_quas,
             size_t k,
             size_t& list_size) const;
 

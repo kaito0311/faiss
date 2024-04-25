@@ -164,6 +164,161 @@ struct HeapResultHandler {
     }
 };
 
+template <class C>
+struct HeapResultHandlerQuality {
+    using T = typename C::T;
+    using TI = typename C::TI;
+
+    int nq;
+    T* heap_dis_tab;
+    TI* heap_ids_tab;
+    T* heap_qua_tab;
+
+    int64_t k; // number of results to keep
+
+    HeapResultHandlerQuality(size_t nq, T* heap_dis_tab, TI* heap_ids_tab, T* heap_qua_tab, size_t k)
+            : nq(nq),
+              heap_dis_tab(heap_dis_tab),
+              heap_ids_tab(heap_ids_tab),
+              heap_qua_tab(heap_qua_tab),
+              k(k) {}
+
+    /******************************************************
+     * API for 1 result at a time (each SingleResultHandler is
+     * called from 1 thread)
+     */
+
+    struct SingleResultHandlerQuality {
+        HeapResultHandlerQuality& hr;
+        size_t k;
+
+        T* heap_dis;
+        TI* heap_ids;
+        T* heap_qua;
+        T thresh;
+
+        SingleResultHandlerQuality(HeapResultHandlerQuality& hr) : hr(hr), k(hr.k) {}
+
+        /// begin results for query # i
+        void begin(size_t i) {
+            heap_dis = hr.heap_dis_tab + i * k;
+            heap_ids = hr.heap_ids_tab + i * k;
+            heap_qua = hr.heap_qua_tab + i * k; 
+            heap_heapify_quality<C>(k, heap_dis, heap_ids, heap_qua);
+            thresh = heap_dis[0];
+        }
+
+        /// add one result for query i
+        void add_result(T dis, TI idx, T qua) {
+            if (C::cmp(heap_dis[0], dis)) {
+                heap_replace_top_quality<C>(k, heap_dis, heap_ids, heap_qua, dis, idx, qua);
+                thresh = heap_dis[0];
+            }
+        }
+
+        /// series of results for query i is done
+        void end() {
+            heap_reorder_quality<C>(k, heap_dis, heap_ids, heap_qua);
+        }
+    };
+
+    /******************************************************
+     * API for multiple results (called from 1 thread)
+     */
+
+    size_t i0, i1;
+
+    /// begin
+    void begin_multiple(size_t i0, size_t i1) {
+        this->i0 = i0;
+        this->i1 = i1;
+        for (size_t i = i0; i < i1; i++) {
+            heap_heapify_quality<C>(k, heap_dis_tab + i * k, heap_ids_tab + i * k, heap_qua_tab + i * k);
+        }
+    }
+
+    /// add results for query i0..i1 and j0..j1
+    void add_results(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab) {
+    #pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            T* heap_dis = heap_dis_tab + i * k;
+            TI* heap_ids = heap_ids_tab + i * k;
+            T* heap_qua = heap_qua_tab + i * k; 
+
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
+            T thresh = heap_dis[0];
+            for (size_t j = j0; j < j1; j++) {
+                T dis = dis_tab_i[j];
+                T qua = qua_tab_i[j];
+                if (C::cmp(thresh, dis)) {
+                    heap_replace_top_quality<C>(k, heap_dis, heap_ids, heap_qua, dis, j, qua);
+                    thresh = heap_dis[0];
+                }
+            }
+        }
+    }
+
+    /// add results boundary for query i0..i1 and j0..j1
+    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
+    #pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            T* heap_dis = heap_dis_tab + i * k;
+            TI* heap_ids = heap_ids_tab + i * k;
+            TI* heap_qua = heap_qua_tab + i * k;
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
+            T thresh = heap_dis[0];
+            for (size_t j = j0; j < j1; j++) {
+                T dis = dis_tab_i[j];
+                T qua = qua_tab_i[j];
+                bool keep = true;
+                if (dis < lower){
+                    keep = false;
+                };
+                if (dis > upper){
+                    keep = false;
+                };
+                if (C::cmp(thresh, dis) && keep) {
+                    heap_replace_top_quality<C>(k, heap_dis, heap_ids, heap_qua, dis, j, qua);
+                    thresh = heap_dis[0];
+                }
+            }
+        }
+    }
+
+    /// add results for query i0..i1 and j0..j1
+    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
+    #pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            T* heap_dis = heap_dis_tab + i * k;
+            TI* heap_ids = heap_ids_tab + i * k;
+            T* heap_qua = heap_qua_tab + i * k; 
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+
+            T thresh = heap_dis[0];
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    T dis = dis_tab_i[j];
+                    if (C::cmp(thresh, dis)) {
+                            heap_replace_top_quality<C>(k, heap_dis, heap_ids, heap_qua, dis, j, curr_quality_score);
+                            thresh = heap_dis[0];
+                    }
+                }
+            }
+        }
+    }
+
+    /// series of results for queries i0..i1 is done
+    void end_multiple() {
+        // maybe parallel for
+        for (size_t i = i0; i < i1; i++) {
+            heap_reorder_quality<C>(k, heap_dis_tab + i * k, heap_ids_tab + i * k, heap_qua_tab + i * k);
+        }
+    }
+};
+
 /*****************************************************************
  * Reservoir result handler
  *
@@ -229,6 +384,253 @@ struct ReservoirTopN {
             // add remaining elements
             heap_addn<C>(n, heap_dis, heap_ids, vals + n, ids + n, i - n);
             heap_reorder<C>(n, heap_dis, heap_ids);
+        }
+    }
+};
+
+/// Reservoir for a single query
+template <class C>
+struct ReservoirTopNQuality {
+    using T = typename C::T;
+    using TI = typename C::TI;
+
+    T* vals;
+    TI* ids;
+    T* quas;
+
+    size_t i;        // number of stored elements
+    size_t n;        // number of requested elements
+    size_t capacity; // size of storage
+
+    T threshold; // current threshold
+
+    ReservoirTopNQuality() {}
+
+    ReservoirTopNQuality(size_t n, size_t capacity, T* vals, TI* ids, T* quas)
+            : vals(vals), ids(ids), i(0), n(n), capacity(capacity), quas(quas) {
+        assert(n < capacity);
+        threshold = C::neutral();
+    }
+
+    void add(T val, TI id, T qua) {
+        if (C::cmp(threshold, val)) {
+            if (i == capacity) {
+                shrink_fuzzy();
+            }
+            vals[i] = val;
+            ids[i] = id;
+            quas[i] = qua;
+            i++;
+        }
+    }
+
+    // reduce storage from capacity to anything
+    // between n and (capacity + n) / 2
+    void shrink_fuzzy() {
+        assert(i == capacity);
+        threshold = partition_fuzzy_quality<C>(
+                vals, ids, quas, capacity, n, (capacity + n) / 2, &i);
+    }
+
+    void to_result(T* heap_dis, TI* heap_ids, T* heap_qua) const {
+        for (int j = 0; j < std::min(i, n); j++) {
+            heap_push_quality<C>(j + 1, heap_dis, heap_ids, heap_qua, vals[j], ids[j], quas[j]);
+        }
+
+        if (i < n) {
+            heap_reorder_quality<C>(i, heap_dis, heap_ids, heap_qua);
+            // add empty results
+            heap_heapify_quality<C>(n - i, heap_dis + i, heap_ids + i, heap_qua + i);
+        } else {
+            // add remaining elements
+            heap_addn_quality<C>(n, heap_dis, heap_ids, heap_qua, vals + n, ids + n, quas + n, i - n);
+            heap_reorder_quality<C>(n, heap_dis, heap_ids, heap_qua);
+        }
+    }
+};
+
+
+template <class C>
+struct ReservoirResultHandlerQuality {
+    using T = typename C::T;
+    using TI = typename C::TI;
+
+    int nq;
+    T* heap_dis_tab;
+    TI* heap_ids_tab;
+    T* heap_qua_tab;
+
+    int64_t k;       // number of results to keep
+    size_t capacity; // capacity of the reservoirs
+
+    ReservoirResultHandlerQuality(
+            size_t nq,
+            T* heap_dis_tab,
+            TI* heap_ids_tab,
+            T* heap_qua_tab,
+            size_t k)
+            : nq(nq),
+              heap_dis_tab(heap_dis_tab),
+              heap_ids_tab(heap_ids_tab),
+              heap_qua_tab(heap_qua_tab),
+              k(k) {
+        // double then round up to multiple of 16 (for SIMD alignment)
+        capacity = (2 * k + 15) & ~15;
+    }
+
+    /******************************************************
+     * API for 1 result at a time (each SingleResultHandler is
+     * called from 1 thread)
+     */
+
+    struct SingleResultHandlerQuality {
+        ReservoirResultHandlerQuality& hr;
+
+        std::vector<T> reservoir_dis;
+        std::vector<TI> reservoir_ids;
+        std::vector<T> reservoir_quas;
+        ReservoirTopNQuality<C> res1;
+
+        SingleResultHandlerQuality(ReservoirResultHandlerQuality& hr)
+                : hr(hr),
+                  reservoir_dis(hr.capacity),
+                  reservoir_ids(hr.capacity),
+                  reservoir_quas(hr.capacity) {}
+
+        size_t i;
+
+        /// begin results for query # i
+        void begin(size_t i) {
+            res1 = ReservoirTopNQuality<C>(
+                    hr.k,
+                    hr.capacity,
+                    reservoir_dis.data(),
+                    reservoir_ids.data(),
+                    reservoir_quas.data()
+                    );
+            this->i = i;
+        }
+
+        /// add one result for query i
+        void add_result(T dis, TI idx, T qua) {
+            res1.add(dis, idx, qua);
+        }
+        /// add one result for query i
+        void add_result_boundary(T dis, TI idx, T qua, T lower, T upper, T duplicate_thr, bool rm_duplicate) {
+            bool keep = true;
+            if (dis < lower){
+                keep = false;
+            };
+            if (dis > upper){
+                keep = false;
+            };
+            if (keep){
+                res1.add(dis, idx, qua);
+            };
+        }
+
+        /// series of results for query i is done
+        void end() {
+            T* heap_dis = hr.heap_dis_tab + i * hr.k;
+            TI* heap_ids = hr.heap_ids_tab + i * hr.k;
+            T* heap_qua = hr.heap_qua_tab + i * hr.k;
+            res1.to_result(heap_dis, heap_ids, heap_qua);
+        }
+    };
+
+    /******************************************************
+     * API for multiple results (called from 1 thread)
+     */
+
+    size_t i0, i1;
+
+    std::vector<T> reservoir_dis;
+    std::vector<TI> reservoir_ids;
+    std::vector<T> reservoir_qua;
+    std::vector<ReservoirTopNQuality<C>> reservoirs;
+
+    /// begin
+    void begin_multiple(size_t i0, size_t i1) {
+        this->i0 = i0;
+        this->i1 = i1;
+        reservoir_dis.resize((i1 - i0) * capacity);
+        reservoir_ids.resize((i1 - i0) * capacity);
+        reservoir_qua.resize((i1 - i0) * capacity);
+        reservoirs.clear();
+        for (size_t i = i0; i < i1; i++) {
+            reservoirs.emplace_back(
+                    k,
+                    capacity,
+                    reservoir_dis.data() + (i - i0) * capacity,
+                    reservoir_ids.data() + (i - i0) * capacity,
+                    reservoir_qua.data() + (i - i0) * capacity);
+        }
+    }
+
+    /// add results for query i0..i1 and j0..j1
+    void add_results(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab) {
+        // maybe parallel for
+#pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
+            for (size_t j = j0; j < j1; j++) {
+                T dis = dis_tab_i[j];
+                T qua = qua_tab_i[j];
+                reservoir.add(dis, j, qua);
+            }
+        }
+    }
+
+    /// add results for query i0..i1 and j0..j1
+    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
+        // maybe parallel for
+#pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
+            for (size_t j = j0; j < j1; j++) {
+                T dis = dis_tab_i[j];
+                T qua = qua_tab_i[j];
+                bool keep = true;
+                if (dis < lower){
+                    keep = false;
+                };
+                if (dis > upper){
+                    keep = false;
+                };
+                if (keep){
+                    reservoir.add(dis, j, qua);
+                };
+            }
+        }
+    }
+    /// add results for query i0..i1 and j0..j1
+    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
+        // maybe parallel for
+#pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    T dis = dis_tab_i[j];
+                    reservoir.add(dis, j, curr_quality_score);
+                }
+            }
+        }
+    }
+
+
+    /// series of results for queries i0..i1 is done
+    void end_multiple() {
+        // maybe parallel for
+        for (size_t i = i0; i < i1; i++) {
+            reservoirs[i - i0].to_result(
+                    heap_dis_tab + i * k, heap_ids_tab + i * k, heap_qua_tab + i * k);
         }
     }
 };
@@ -720,6 +1122,194 @@ struct SingleBestResultHandler {
         if (C::cmp(min_distance, dis) && keep) {
             min_distance = dis;
             min_index = idx;
+        }
+    }
+
+    /// series of results for queries i0..i1 is done
+    void end_multiple() {}
+};
+
+template <class C>
+struct SingleBestResultHandlerQuality {
+    using T = typename C::T;
+    using TI = typename C::TI;
+
+    int nq;
+    // contains exactly nq elements
+    T* dis_tab;
+    // contains exactly nq elements
+    TI* ids_tab;
+    // contains exactly nq elements
+
+    T* qua_tab; 
+
+    SingleBestResultHandlerQuality(size_t nq, T* dis_tab, TI* ids_tab, T* qua_tab)
+            : nq(nq), dis_tab(dis_tab), ids_tab(ids_tab), qua_tab(qua_tab) {}
+
+    struct SingleResultHandlerQuality {
+        SingleBestResultHandlerQuality& hr;
+
+        T min_dis;
+        TI min_idx;
+        T min_qua;
+        size_t current_idx = 0;
+
+        SingleResultHandlerQuality(SingleBestResultHandlerQuality& hr) : hr(hr) {}
+
+        /// begin results for query # i
+        void begin(const size_t current_idx) {
+            this->current_idx = current_idx;
+            min_dis = HUGE_VALF;
+            min_idx = -1;
+        }
+
+        /// add one result for query i
+        void add_result(T dis, TI idx, T qua) {
+            if (C::cmp(min_dis, dis)) {
+                min_dis = dis;
+                min_idx = idx;
+                min_qua = qua;
+            }
+        }
+
+        /// add one result for query i with boundary check
+        void add_result_boundary(T dis, TI idx, T qua, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
+            bool keep = true;
+            if (dis < lower){
+                keep = false;
+            };
+            if (dis > upper){
+                keep = false;
+            };
+            if (C::cmp(min_dis, dis) && keep) {
+                min_dis = dis;
+                min_idx = idx;
+                min_qua = qua;
+            }
+        }
+
+        /// series of results for query i is done
+        void end() {
+            hr.dis_tab[current_idx] = min_dis;
+            hr.ids_tab[current_idx] = min_idx;
+            hr.qua_tab[current_idx] = min_qua; 
+        }
+    };
+
+    size_t i0, i1;
+
+    /// begin
+    void begin_multiple(size_t i0, size_t i1) {
+        this->i0 = i0;
+        this->i1 = i1;
+
+        for (size_t i = i0; i < i1; i++) {
+            this->dis_tab[i] = HUGE_VALF;
+        }
+    }
+
+    /// add results for query i0..i1 and j0..j1
+    void add_results(size_t j0, size_t j1, const T* dis_tab) {
+        for (int64_t i = i0; i < i1; i++) {
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
+
+            auto& min_distance = this->dis_tab[i];
+            auto& min_index = this->ids_tab[i];
+            auto& min_quality = this->qua_tab[i];
+
+            for (size_t j = j0; j < j1; j++) {
+                const T distance = dis_tab_i[j];
+                const T quality = qua_tab_i[j];
+
+                if (C::cmp(min_distance, distance)) {
+                    min_distance = distance;
+                    min_index = j;
+                    min_quality = quality;
+                }
+            }
+        }
+    }
+
+    void add_results_boundary(size_t j0, size_t j1, const T* dis_tab, const T* qua_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
+        for (int64_t i = i0; i < i1; i++) {
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            const T* qua_tab_i = qua_tab + (j1 - j0) * (i - i0) - j0;
+
+            auto& min_distance = this->dis_tab[i];
+            auto& min_index = this->ids_tab[i];
+            auto& min_quality = this->qua_tab[i];
+
+            for (size_t j = j0; j < j1; j++) {
+                const T distance = dis_tab_i[j];
+                const T quality = qua_tab_i[j];
+                bool keep = true;
+                if (distance < lower){
+                    keep = false;
+                };
+                if (distance > upper){
+                    keep = false;
+                };
+                if (C::cmp(min_distance, distance) && keep) {
+                    min_distance = distance;
+                    min_index = j;
+                    min_quality = quality;
+                }
+            }
+        }
+    }
+
+    void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
+        for (int64_t i = i0; i < i1; i++) {
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+
+            auto& min_distance = this->dis_tab[i];
+            auto& min_index = this->ids_tab[i];
+            auto& min_quality = this->dis_tab[i];
+
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    const T distance = dis_tab_i[j];
+                    if (C::cmp(min_distance, distance)) {
+                        min_distance = distance;
+                        min_index = j;
+                        min_quality = curr_quality_score;
+                    }
+                }
+            }
+        }
+    }
+
+
+
+    void add_result(const size_t i, const T dis, const TI idx, const T qua) {
+        auto& min_distance = this->dis_tab[i];
+        auto& min_index = this->ids_tab[i];
+        auto& min_quality = this->qua_tab[i];
+
+        if (C::cmp(min_distance, dis)) {
+            min_distance = dis;
+            min_index = idx;
+            min_quality = qua; 
+        }
+    }
+
+    void add_result_boundary(const size_t i, const T dis, const TI idx, const T qua, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate) {
+        auto& min_distance = this->dis_tab[i];
+        auto& min_index = this->ids_tab[i];
+        auto& min_quality = this->qua_tab[i];
+        bool keep = true;
+        if (dis < lower){
+            keep = false;
+        };
+        if (dis > upper){
+            keep = false;
+        };
+        if (C::cmp(min_distance, dis) && keep) {
+            min_distance = dis;
+            min_index = idx;
+            min_quality = qua; 
         }
     }
 

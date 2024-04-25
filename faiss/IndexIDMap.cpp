@@ -58,7 +58,7 @@ void IndexIDMapTemplate<IndexT>::add(
 }
 
 template <typename IndexT>
-void IndexIDMapTemplate<IndexT>::add(
+void IndexIDMapTemplate<IndexT>::add_with_quality(
         idx_t,
         const typename IndexT::component_t*,
         const typename IndexT::component_t*) {
@@ -94,12 +94,12 @@ void IndexIDMapTemplate<IndexT>::add_with_ids(
 }
 
 template <typename IndexT>
-void IndexIDMapTemplate<IndexT>::add_with_ids(
+void IndexIDMapTemplate<IndexT>::add_with_ids_with_quality(
         idx_t n,
         const typename IndexT::component_t* x,
         const typename IndexT::component_t* r_qua,
         const idx_t* xids) {
-    index->add(n, x, r_qua);
+    index->add_with_quality(n, x, r_qua);
     for (idx_t i = 0; i < n; i++)
         id_map.push_back(xids[i]);
     this->ntotal = index->ntotal;
@@ -161,6 +161,8 @@ void IndexIDMapTemplate<IndexT>::search(
     }
 }
 
+
+
 template <typename IndexT>
 void IndexIDMapTemplate<IndexT>::search_with_quality(
         idx_t n,
@@ -170,6 +172,7 @@ void IndexIDMapTemplate<IndexT>::search_with_quality(
         const typename IndexT::distance_t upper_quality,
         typename IndexT::distance_t* distances,
         idx_t* labels,
+        typename IndexT::distance_t* out_quas,
         const SearchParameters* params) const {
     IDSelectorTranslated this_idtrans(this->id_map, nullptr);
     ScopedSelChange sel_change;
@@ -190,7 +193,7 @@ void IndexIDMapTemplate<IndexT>::search_with_quality(
             sel_change.set(params_non_const, &this_idtrans);
         }
     }
-    index->search_with_quality(n, x, k, lower_quality, upper_quality, distances, labels, params);
+    index->search_with_quality(n, x, k, lower_quality, upper_quality, distances, labels, out_quas, params);
     idx_t* li = labels;
 #pragma omp parallel for
     for (idx_t i = 0; i < n * k; i++) {
@@ -252,6 +255,11 @@ void IndexIDMapTemplate<IndexT>::range_search(
         result->labels[i] = result->labels[i] < 0 ? result->labels[i]
                                                   : id_map[result->labels[i]];
     }
+}
+
+template <typename IndexT>
+void IndexIDMapTemplate<IndexT>::set_include_quality() {
+    index->set_include_quality();
 }
 
 template <typename IndexT>
@@ -323,6 +331,19 @@ void IndexIDMap2Template<IndexT>::add_with_ids(
 }
 
 template <typename IndexT>
+void IndexIDMap2Template<IndexT>::add_with_ids_with_quality(
+        idx_t n,
+        const typename IndexT::component_t* x,
+        const typename IndexT::component_t* r_qua,
+        const idx_t* xids) {
+    size_t prev_ntotal = this->ntotal;
+    IndexIDMapTemplate<IndexT>::add_with_ids_with_quality(n, x, r_qua, xids);
+    for (size_t i = prev_ntotal; i < this->ntotal; i++) {
+        rev_map[this->id_map[i]] = i;
+    }
+}
+
+template <typename IndexT>
 void IndexIDMap2Template<IndexT>::check_consistency() const {
     FAISS_THROW_IF_NOT(rev_map.size() == this->id_map.size());
     FAISS_THROW_IF_NOT(this->id_map.size() == this->ntotal);
@@ -367,6 +388,13 @@ void IndexIDMap2Template<IndexT>::reconstruct(
     } catch (const std::out_of_range& e) {
         FAISS_THROW_FMT("key %" PRId64 " not found", key);
     }
+}
+
+template <typename IndexT> 
+void IndexIDMap2Template<IndexT>::reconstruct_qua(
+        idx_t key, 
+        typename IndexT::component_t* qua_recons) const {
+            this->index->reconstruct_qua(rev_map.at(key), qua_recons);
 }
 
 // explicit template instantiations
