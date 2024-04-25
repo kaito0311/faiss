@@ -150,6 +150,7 @@ struct IndexIVFInterface : Level1Quantizer {
             const float upper_quality,
             float* distances,
             idx_t* labels,
+            float* out_quas,
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const = 0;
@@ -440,6 +441,7 @@ struct IndexIVF : Index, IndexIVFInterface {
             const float upper_quality,
             float* distances,
             idx_t* labels,
+            float* out_quas,
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const override;
@@ -491,6 +493,7 @@ struct IndexIVF : Index, IndexIVFInterface {
             const float upper_quality, 
             float* distances, 
             idx_t* labels, 
+            float* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     /** Get a scanner for this index (store_pairs means ignore labels)
@@ -730,6 +733,7 @@ struct InvertedListScanner {
      * @param upper_quality    upper bound quality to filter
      * @param distances         heap distances (size k)
      * @param labels            heap labels (size k)
+     * @param out_quas          heap quality (size k)
      * @param k                 heap size
      * @return number of heap updates performed
      */
@@ -742,6 +746,7 @@ struct InvertedListScanner {
             const float upper_quality, 
             float* distances, 
             idx_t* labels,
+            float* out_quas,
             size_t k) const; 
     
     // same as scan_codes, using an iterator with quality. TODO: It's seem never call -> check it
@@ -749,6 +754,7 @@ struct InvertedListScanner {
             InvertedListsIterator* iterator,
             float* distances,
             idx_t* labels,
+            float* out_quas,
             size_t k,
             size_t& list_size) const;
 
