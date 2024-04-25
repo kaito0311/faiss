@@ -8,7 +8,7 @@ cd faiss
 cmake -B build . -DFAISS_ENABLE_GPU=OFF -DFAISS_OPT_LEVEL=avx2 -DBUILD_SHARED_LIBS=ON
 make -C build -j8 faiss
 make -C build -j8 swigfaiss
-cd build/faiss/python && python setup.py install
+cd build/faiss/python && python setup.py install && cd ../../../
 
 
 # Running an example 

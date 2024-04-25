@@ -271,7 +271,6 @@ def test_reconstruct_quality():
 
 if __name__ == "__main__":
     test_reconstruct_quality()
-    exit()
 
     print("[INFO] Testing index flat L2: ")
     test_index_flat()
