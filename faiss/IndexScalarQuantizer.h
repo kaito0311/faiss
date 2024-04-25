@@ -75,6 +75,7 @@ struct IndexScalarQuantizer : IndexFlatCodes {
             const float upper_quality, 
             float* distances,
             idx_t* labels,
+            float* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     FlatCodesDistanceComputer* get_FlatCodesDistanceComputer() const override;
