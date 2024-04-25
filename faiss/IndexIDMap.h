@@ -66,6 +66,7 @@ struct IndexIDMapTemplate : IndexT {
             const distance_t upper_quality,
             distance_t* distances,
             idx_t* labels,
+            distance_t* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     void train(idx_t n, const component_t* x) override;

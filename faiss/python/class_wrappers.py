@@ -391,7 +391,7 @@ def handle_Index(the_class):
         self.search_c(n, swig_ptr(x), k, swig_ptr(D), swig_ptr(I), params)
         return D, I
 
-    def replacement_search_with_quality(self, x, k, lower_quality, upper_quality, *, params=None, D=None, I=None):
+    def replacement_search_with_quality(self, x, k, lower_quality, upper_quality, *, params=None, D=None, I=None, Q=None):
         """Find the k nearest neighbors of the set of vectors x in the index.
 
         Parameters
@@ -429,13 +429,18 @@ def handle_Index(the_class):
         else:
             assert D.shape == (n, k)
 
+        if Q is None:
+            Q = np.empty((n, k), dtype=np.float32)
+        else:
+            assert Q.shape == (n, k)
+
         if I is None:
             I = np.empty((n, k), dtype=np.int64)
         else:
             assert I.shape == (n, k)
 
-        self.search_with_quality_c(n, swig_ptr(x), k, lower_quality, upper_quality, swig_ptr(D), swig_ptr(I), params)
-        return D, I
+        self.search_with_quality_c(n, swig_ptr(x), k, lower_quality, upper_quality, swig_ptr(D), swig_ptr(I), swig_ptr(Q), params)
+        return D, I, Q
 
     def replacement_boundary_search(self, x, k, lower, upper, *, params=None, D=None, I=None, rm_duplicate = False, duplicate_thr = 1e-6):
         """Find the k nearest neighbors of the set of vectors x in the index.

@@ -192,9 +192,9 @@ IndexIVF::IndexIVF(
         cp.spherical = true;
     }
 
-    if (include_quality) {
-        this->make_direct_map(true);
-    }
+    // if (include_quality) {
+    //     this->make_direct_map(true);
+    // }
 }
 
 IndexIVF::IndexIVF() = default;
@@ -2518,8 +2518,6 @@ size_t InvertedListScanner::scan_codes_with_quality(
     if (!keep_max) {
         for (size_t j = 0; j < list_size; j++) {
             float curr_quality = curr_qualities[0]; 
-            printf("code size: %ld \n", code_size);
-            printf("curr quality: %f \n", curr_quality);
             if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
                 float dis = distance_to_code(codes);
                 if (dis < simi[0]) {
@@ -2566,8 +2564,6 @@ size_t InvertedListScanner::scan_codes_with_quality(
     if (!keep_max) {
         for (size_t j = 0; j < list_size; j++) {
             float curr_quality = curr_qualities[0]; 
-            printf("code size: %ld \n", code_size);
-            printf("curr quality: %f \n", curr_quality);
             if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
                 float dis = distance_to_code(codes);
                 if (dis < simi[0]) {

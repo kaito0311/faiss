@@ -74,12 +74,12 @@ def merge_ondisk(
 
 def compare_search(index_wo_qua, index_w_q, qua_1 = False, qua_2 = True):
     if qua_1: 
-        D1, I1 = index_wo_qua.search_with_quality(xb[:10], k, 0, 1.0)
+        D1, I1, Q2 = index_wo_qua.search_with_quality(xb[:10], k, 0, 1.0)
     else: 
         D1, I1 = index_wo_qua.search(xb[:10], k)
     
     if qua_2: 
-        D2, I2 = index_w_q.search_with_quality(xb[:10], k, 0, 1.0)
+        D2, I2, Q2 = index_w_q.search_with_quality(xb[:10], k, 0, 1.0)
     else: 
         D2, I2 = index_w_q.search(xb[:10], k)
         
@@ -247,20 +247,22 @@ def test_reconstruct_quality():
 
     index_flat_w_qua = faiss.index_factory(512, name_factory)
     index_flat_w_qua.set_include_quality()
+    index_flat_w_qua.make_direct_map()
     index_flat_w_qua.set_direct_map_type(faiss.DirectMap.Hashtable)
 
-    print(name_factory)
+    # print(name_factory)
 
     index_flat_w_qua.train(xb)
     index_flat_w_qua.add_with_ids_with_quality(xb, r_qua, ids) 
+    # index_flat_w_qua.add_with_quality(xb, r_qua)
 
-    D, I = index_flat_w_qua.search_with_quality(xb[:10], k, 0, 1.0)
+    D, I, Q = index_flat_w_qua.search_with_quality(xb[:10], k, 0, 1.0)
     
-    # for row in I:
-    #     for element in row:
-    #         r_recons = index_flat_w_qua.reconstruct_qua(int(ids[element]))
-    #         true_r_qua = r_qua[ids[element]]
-    #         print(r_recons, true_r_qua)
+    for idx_r, row in enumerate(I):
+        for idx_c, element in enumerate(row):
+            r_recons = index_flat_w_qua.reconstruct_qua(int(ids[element]))
+            true_r_qua = r_qua[ids[element]]
+            print(r_recons, true_r_qua, Q[idx_r][idx_c])
     
     print(name_factory)
     
@@ -270,8 +272,9 @@ def test_reconstruct_quality():
 
 
 if __name__ == "__main__":
+    print("[INFO] Testing reconstruct quality ")
     test_reconstruct_quality()
-    exit()
+
 
     print("[INFO] Testing index flat L2: ")
     test_index_flat()

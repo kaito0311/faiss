@@ -161,6 +161,8 @@ void IndexIDMapTemplate<IndexT>::search(
     }
 }
 
+
+
 template <typename IndexT>
 void IndexIDMapTemplate<IndexT>::search_with_quality(
         idx_t n,
@@ -170,6 +172,7 @@ void IndexIDMapTemplate<IndexT>::search_with_quality(
         const typename IndexT::distance_t upper_quality,
         typename IndexT::distance_t* distances,
         idx_t* labels,
+        typename IndexT::distance_t* out_quas,
         const SearchParameters* params) const {
     IDSelectorTranslated this_idtrans(this->id_map, nullptr);
     ScopedSelChange sel_change;
@@ -190,7 +193,7 @@ void IndexIDMapTemplate<IndexT>::search_with_quality(
             sel_change.set(params_non_const, &this_idtrans);
         }
     }
-    index->search_with_quality(n, x, k, lower_quality, upper_quality, distances, labels, params);
+    index->search_with_quality(n, x, k, lower_quality, upper_quality, distances, labels, out_quas, params);
     idx_t* li = labels;
 #pragma omp parallel for
     for (idx_t i = 0; i < n * k; i++) {

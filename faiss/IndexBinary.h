@@ -98,6 +98,7 @@ struct IndexBinary {
             const int32_t upper_quality,
             int32_t* distances,
             idx_t* labels,
+            int32_t* out_quas,
             const SearchParameters* params = nullptr) const;
 
     virtual void boundary_search(

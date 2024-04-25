@@ -57,6 +57,7 @@ void IndexBinary::search_with_quality(
         const int32_t,
         int32_t*,
         idx_t*,
+        int32_t*,
         const SearchParameters*) const {
     FAISS_THROW_MSG("search_with_quality not implemented");
 }
