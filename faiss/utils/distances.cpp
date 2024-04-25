@@ -203,14 +203,14 @@ void exhaustive_inner_product_seq_quality(
         size_t ny,
         ResultHandler& res,
         const IDSelector* sel = nullptr) {
-    using SingleResultHandler = typename ResultHandler::SingleResultHandler;
+    using SingleResultHandlerQuality = typename ResultHandler::SingleResultHandlerQuality;
     int nt = std::min(int(nx), omp_get_max_threads());
 
     FAISS_ASSERT(use_sel == (sel != nullptr));
 
 #pragma omp parallel num_threads(nt)
     {
-        SingleResultHandler resi(res);
+        SingleResultHandlerQuality resi(res);
 #pragma omp for
         for (int64_t i = 0; i < nx; i++) {
             const float* x_i = x + i * d;
@@ -228,7 +228,7 @@ void exhaustive_inner_product_seq_quality(
                 
                 if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
                     float ip = fvec_inner_product(x_i, y_j, d);
-                    resi.add_result(ip, j);
+                    resi.add_result(ip, j, curr_quality_score);
                 }
 
             }
@@ -1354,6 +1354,7 @@ void knn_inner_product_quality(
         size_t k,
         float* val,
         int64_t* ids,
+        float* qua,
         const IDSelector* sel) {
     
     int64_t imin = 0; 
@@ -1368,14 +1369,14 @@ void knn_inner_product_quality(
 
     if (auto sela = dynamic_cast<const IDSelectorArray*>(sel)) {
         knn_inner_products_by_idx_quality(
-            x, y, lower_quality, upper_quality, qualities, sela->ids, d, nx, ny, k, val, ids, 0);
+            x, y, lower_quality, upper_quality, qualities, sela->ids, d, nx, ny, k, val, ids, qua, 0);
         
         return; 
     }
 
     if (k < distance_compute_min_k_reservoir) {
-        using RH = HeapResultHandler<CMin<float, int64_t>>;
-        RH res(nx, val, ids, k);
+        using RH = HeapResultHandlerQuality<CMin<float, int64_t>>;
+        RH res(nx, val, ids, qua, k);
         if (sel) {
             exhaustive_inner_product_seq_quality<RH, true>(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, sel);
         } else if (nx < distance_compute_blas_threshold) {
@@ -1385,8 +1386,8 @@ void knn_inner_product_quality(
         }
 
     } else {
-        using RH = ReservoirResultHandler<CMin<float, int64_t>>;
-        RH res(nx, val, ids, k);
+        using RH = ReservoirResultHandlerQuality<CMin<float, int64_t>>;
+        RH res(nx, val, ids, qua, k);
         if (sel) {
             exhaustive_inner_product_seq_quality<RH, true>(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, sel);
         } else if (nx < distance_compute_blas_threshold) {
@@ -1414,10 +1415,10 @@ void knn_inner_product_quality(
         size_t d,
         size_t nx, 
         size_t ny,
-        float_minheap_array_t* res,
+        float_minheap_quality_array_t* res,
         const IDSelector* sel) {
     FAISS_THROW_IF_NOT(nx == res->nh);
-    knn_inner_product_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res->k, res->val, res->ids, sel);
+    knn_inner_product_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res->k, res->val, res->ids, res->qua, sel);
 }
 
 void knn_L2sqr(
@@ -1839,6 +1840,7 @@ void knn_inner_products_by_idx_quality(
         size_t k,
         float* res_vals, // valu
         int64_t* res_ids,
+        float* res_quas,
         int64_t ld_ids) {
     if (ld_ids < 0) {
         ld_ids = ny;
@@ -1851,7 +1853,8 @@ void knn_inner_products_by_idx_quality(
         size_t j;
         float* __restrict simi = res_vals + i * k;
         int64_t* __restrict idxi = res_ids + i * k;
-        minheap_heapify(k, simi, idxi);
+        float* __restrict quai = res_quas + i * k;
+        minheap_heapify_quality(k, simi, idxi, quai);
 
         for (j = 0; j < ny; j++) {
             if (idsi[j] < 0) {
@@ -1868,11 +1871,12 @@ void knn_inner_products_by_idx_quality(
             }
 
             if (ip > simi[0] && keep) {
-                minheap_replace_top(k, simi, idxi, ip, idsi[j]);
+                // minheap_replace_top(k, simi, idxi, ip, idsi[j]);
+                minheap_replace_top_quality(k, simi, idxi, quai, ip, idsi[j], curr_quality_score);
             }
         }
 
-        minheap_reorder(k, simi, idxi);
+        minheap_reorder_quality(k, simi, idxi, quai);
 
     }
 }

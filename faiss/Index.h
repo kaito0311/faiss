@@ -204,6 +204,7 @@ struct Index {
      * @param upper_quality     upper bound score quality, float
      * @param distances         output pairwise distances, size n*k
      * @param labels            output labels of the NNs, size n*k
+     * @param out_quas          output qualities of the NNs, size n*k
      */
     virtual void search_with_quality(
             idx_t n,
@@ -213,6 +214,7 @@ struct Index {
             const float upper_quality, 
             float* distances,
             idx_t* labels,
+            float* out_quas,
             const SearchParameters* params = nullptr) const; 
  
 

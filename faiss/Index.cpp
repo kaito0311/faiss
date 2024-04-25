@@ -55,6 +55,7 @@ void Index::search_with_quality(
         const float, /*upper_quality*/
         float*, /*distances*/
         idx_t*, /*labels*/
+        float*, /*out_quas*/
         const SearchParameters* params) const {
     FAISS_THROW_MSG("search with quality not implemented");
 }

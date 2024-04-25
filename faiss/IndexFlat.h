@@ -61,6 +61,7 @@ struct IndexFlat : IndexFlatCodes {
             const float upper_quality, 
             float* distances,
             idx_t* labels,
+            float* out_quas,
             const SearchParameters* params = nullptr) const override;
 
     void reconstruct(idx_t key, float* recons) const override;

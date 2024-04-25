@@ -323,7 +323,7 @@ void knn_inner_product_quality(
         size_t d,
         size_t nx, 
         size_t ny,
-        float_minheap_array_t* res,
+        float_minheap_quality_array_t* res,
         const IDSelector* sel = nullptr);
 
 /**  Return the k nearest neighors of each of the nx vectors x among the ny
@@ -372,6 +372,7 @@ void knn_inner_product_quality(
         size_t k,
         float* distances,
         int64_t* indexes,
+        float* quas,
         const IDSelector* sel = nullptr);
 
 /** Return the k nearest neighors of each of the nx vectors x among the ny
@@ -521,6 +522,7 @@ void knn_inner_products_by_idx_quality(
         size_t k,
         float* res_vals, // valu
         int64_t* res_ids,
+        float* res_quas,
         int64_t ld_ids = -1);
 
 /** Find the nearest neighbors for nx queries in a set of ny vectors
