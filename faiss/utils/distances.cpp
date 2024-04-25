@@ -331,14 +331,14 @@ void exhaustive_L2sqr_seq_quality(
         size_t ny,
         ResultHandler& res,
         const IDSelector* sel = nullptr) {
-    using SingleResultHandler = typename ResultHandler::SingleResultHandler;
+    using SingleResultHandlerQuality = typename ResultHandler::SingleResultHandlerQuality;
     int nt = std::min(int(nx), omp_get_max_threads());
 
     FAISS_ASSERT(use_sel == (sel != nullptr));
 
 #pragma omp parallel num_threads(nt)
     {
-        SingleResultHandler resi(res);
+        SingleResultHandlerQuality resi(res);
 #pragma omp for
         for (int64_t i = 0; i < nx; i++) {
             const float* x_i = x + i * d;
@@ -355,7 +355,7 @@ void exhaustive_L2sqr_seq_quality(
 
                 if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
                     float disij = fvec_L2sqr(x_i, y_j, d);
-                    resi.add_result(disij, j);
+                    resi.add_result(disij, j, curr_quality_score);
                 }
             }
             resi.end();
@@ -1552,6 +1552,7 @@ void knn_L2sqr_quality(
         size_t k, 
         float* vals, 
         int64_t* ids, 
+        float* out_quas,
         const float* y_norm2, 
         const IDSelector* sel) {
     int64_t imin = 0;
@@ -1563,18 +1564,18 @@ void knn_L2sqr_quality(
         sel = nullptr;
     }
     if (auto sela = dynamic_cast<const IDSelectorArray*>(sel)) {
-        knn_L2sqr_by_idx_quality(x, y, lower_quality, upper_quality, qualities, sela->ids, d, nx, sela->n, k, vals, ids, 0);
+        knn_L2sqr_by_idx_quality(x, y, lower_quality, upper_quality, qualities, sela->ids, d, nx, sela->n, k, vals, ids, out_quas, 0);
         return;
     }
 
     if (k == 1) {
-        SingleBestResultHandler<CMax<float, int64_t>> res(nx, vals, ids);
+        SingleBestResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, ids);
         knn_L2sqr_select_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, y_norm2, sel);
     } else if (k < distance_compute_min_k_reservoir) {
-        HeapResultHandler<CMax<float, int64_t>> res(nx, vals, ids, k);
+        HeapResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, ids, out_quas, k);
         knn_L2sqr_select_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, y_norm2, sel);
     } else {
-        ReservoirResultHandler<CMax<float, int64_t>> res(nx, vals, ids, k);
+        ReservoirResultHandlerQuality<CMax<float, int64_t>> res(nx, vals, out_quas, ids, k);
         knn_L2sqr_select_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res, y_norm2, sel);
     }
     
@@ -1596,11 +1597,11 @@ void knn_L2sqr_quality(
         size_t d, 
         size_t nx, 
         size_t ny, 
-        float_maxheap_array_t* res,
+        float_maxheap_quality_array_t* res,
         const float* y_norm2, 
         const IDSelector* sel) {
     FAISS_THROW_IF_NOT(res->nh == nx);
-    knn_L2sqr_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res->k, res->val, res->ids, y_norm2, sel);
+    knn_L2sqr_quality(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res->k, res->val, res->ids, res->qua, y_norm2, sel);
 }
 
 /***************************************************************************
@@ -1969,6 +1970,7 @@ void knn_L2sqr_by_idx_quality(
         size_t k,
         float* res_vals,
         int64_t* res_ids,
+        float* res_quas,
         int64_t ld_ids) {
     if (ld_ids < 0) {
         ld_ids = ny;
@@ -1979,7 +1981,8 @@ void knn_L2sqr_by_idx_quality(
         const int64_t* __restrict idsi = ids + i * ld_ids;
         float* __restrict simi = res_vals + i * k;
         int64_t* __restrict idxi = res_ids + i * k;
-        maxheap_heapify(k, simi, idxi);
+        float* __restrict quai = res_quas + i * k;
+        maxheap_heapify_quality(k, simi, idxi, quai);
         for (size_t j = 0; j < ny; j++) {
 
             float disij = fvec_L2sqr(x_, y + d * idsi[j], d);
@@ -1988,11 +1991,11 @@ void knn_L2sqr_by_idx_quality(
 
             if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
                 if (disij < simi[0]) {
-                    maxheap_replace_top(k, simi, idxi, disij, idsi[j]);
+                    maxheap_replace_top_quality(k, simi, idxi, quai, disij, idsi[j], curr_quality_score);
                 }
             }
         }
-        maxheap_reorder(k, simi, idxi);
+        maxheap_reorder_quality(k, simi, idxi, quai);
     }
 }
 

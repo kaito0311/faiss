@@ -415,7 +415,7 @@ void knn_L2sqr_quality(
         size_t d, 
         size_t nx, 
         size_t ny, 
-        float_maxheap_array_t* res, 
+        float_maxheap_quality_array_t* res, 
         const float* y_norm2 = nullptr,
         const IDSelector* sel = nullptr);
 
@@ -469,6 +469,7 @@ void knn_L2sqr_quality(
         size_t k, 
         float* distances, 
         int64_t* indexes, 
+        float* out_quas,
         const float* y_norm2 = nullptr, 
         const IDSelector* sel = nullptr); 
 

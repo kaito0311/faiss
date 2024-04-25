@@ -127,7 +127,7 @@ void IndexFlat::search_with_quality(
         float_minheap_quality_array_t res = {size_t(n), size_t(k), labels, distances, out_quas};
         knn_inner_product_quality(x, get_xb(), lower_quality, upper_quality, get_qualities(), d, n, ntotal, &res, sel);
     } else if (metric_type == METRIC_L2) {
-        float_maxheap_array_t res = {size_t(n), size_t(k), labels, distances};
+        float_maxheap_quality_array_t res = {size_t(n), size_t(k), labels, distances, out_quas};
         knn_L2sqr_quality(x, get_xb(), lower_quality, upper_quality, get_qualities(), d, n, ntotal, &res, nullptr, sel);
         // knn_L2sqr_boundary(x, get_xb(), lower, upper, duplicate_thr, rm_duplicate, d, n, ntotal, &res, nullptr, sel);
         // FAISS_THROW_MSG("metric type not supported");

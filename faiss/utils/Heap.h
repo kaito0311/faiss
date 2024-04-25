@@ -479,7 +479,7 @@ inline void maxheap_heapify(
 }
 
 template <typename T>
-inline void maxheap_heapify(
+inline void maxheap_heapify_quality(
         size_t k,
         T* bh_val,
         int64_t* bh_ids,
