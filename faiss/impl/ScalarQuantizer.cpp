@@ -1264,6 +1264,63 @@ struct IVFSQScannerIP : InvertedListScanner {
         return nup;
     }
 
+    size_t scan_codes_boundary_with_quality(
+            size_t list_size,
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const uint8_t* codes,
+            const idx_t* ids,
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality,
+            float* simi,
+            idx_t* idxi,
+            size_t k) const override {
+        size_t nup = 0;
+        const float* curr_qualities = (float*) qualities;
+        for (size_t j = 0; j < list_size; j++, codes += code_size) {
+            if (use_sel && !sel->is_member(use_sel == 1 ? ids[j] : j)) {
+                continue;
+            }
+    
+            float curr_quality = curr_qualities[0];
+            curr_qualities += 1;
+
+
+            if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
+                float accu = accu0 + dc.query_to_code(codes);
+        
+                bool keep = true;
+                if (accu < lower){
+                    keep = false;
+                };
+                if (accu > upper){
+                    keep = false;
+                };
+
+                if (accu > simi[0] && keep) {
+                    if (rm_duplicate){
+                        for (size_t ii = 0; ii < k; ii++){
+                            if (fabs(accu - simi[ii]) < duplicate_thr){
+                                keep = false;
+                                break;
+                            }
+                        }
+                    };
+                    if (keep) {
+                        int64_t id = store_pairs ? (list_no << 32 | j) : ids[j];
+                        minheap_replace_top(k, simi, idxi, accu, id);
+                        nup++;
+                    }
+                }
+            }
+
+        }
+        return nup;
+    }
+
     void scan_codes_range(
             size_t list_size,
             const uint8_t* codes,
@@ -1358,6 +1415,63 @@ struct IVFSQScannerL2 : InvertedListScanner {
                 maxheap_replace_top(k, simi, idxi, dis, id);
                 nup++;
             }
+        }
+        return nup;
+    }
+
+    size_t scan_codes_boundary_with_quality(
+            size_t list_size,
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const uint8_t* codes,
+            const idx_t* ids,
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality,
+            float* simi,
+            idx_t* idxi,
+            size_t k) const override {
+        size_t nup = 0;
+        const float* curr_qualities = (float*) qualities;
+        for (size_t j = 0; j < list_size; j++, codes += code_size) {
+            if (use_sel && !sel->is_member(use_sel == 1 ? ids[j] : j)) {
+                continue;
+            }
+
+            float curr_quality = curr_qualities[0];
+            curr_qualities += 1;
+
+            if (curr_quality >= lower_quality && curr_quality <= upper_quality) {
+                float dis = dc.query_to_code(codes);
+                bool keep = true;
+                if (dis < lower){
+                    keep = false;
+                };
+                if (dis > upper){
+                    keep = false;
+                };
+
+                if (dis < simi[0] && keep) {
+                    // Add check duplicate
+                    if (rm_duplicate){
+                        for (size_t ii = 0; ii < k; ii++){
+                            if (fabs(dis - simi[ii]) < duplicate_thr){
+                                keep = false;
+                                break;
+                            }
+                        }
+                    };
+
+                    if (keep) {
+                        int64_t id = store_pairs ? (list_no << 32 | j) : ids[j];
+                        maxheap_replace_top(k, simi, idxi, dis, id);
+                        nup++;
+                    }
+                }
+            }
+
         }
         return nup;
     }

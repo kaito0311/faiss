@@ -149,6 +149,61 @@ void IndexScalarQuantizer::search_with_quality(
     }
 }
 
+void IndexScalarQuantizer::boundary_search_with_quality(
+        idx_t n,
+        const float* x,
+        idx_t k,
+        const float lower,
+        const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
+        const float lower_quality,
+        const float upper_quality,
+        float* distances,
+        idx_t* labels,
+        float* out_quas,
+        const SearchParameters* params) const {
+    const IDSelector* sel = params ? params->sel : nullptr;
+
+    FAISS_THROW_IF_NOT(k > 0);
+    FAISS_THROW_IF_NOT(is_trained);
+    FAISS_THROW_IF_NOT(
+            metric_type == METRIC_L2 || metric_type == METRIC_INNER_PRODUCT);
+
+#pragma omp parallel
+    {
+        InvertedListScanner* scanner =
+                sq.select_InvertedListScanner(metric_type, nullptr, true, sel);
+
+        ScopeDeleter1<InvertedListScanner> del(scanner);
+        scanner->list_no = 0; // directly the list number
+
+#pragma omp for
+        for (idx_t i = 0; i < n; i++) {
+            float* D = distances + k * i;
+            idx_t* I = labels + k * i;
+            float* Q = out_quas + k * i; 
+            // re-order heap
+            if (metric_type == METRIC_L2) {
+                maxheap_heapify_quality(k, D, I, Q);
+            } else {
+                minheap_heapify_quality(k, D, I, Q);
+            }
+            scanner->set_query(x + i * d);
+            scanner->scan_codes_boundary_with_quality(ntotal, lower, upper, duplicate_thr, rm_duplicate,
+                                                     codes.data(), nullptr, qualities.data(), 
+                                                     lower_quality, upper_quality, D, I, Q, k);
+
+            // re-order heap
+            if (metric_type == METRIC_L2) {
+                maxheap_reorder_quality(k, D, I, Q);
+            } else {
+                minheap_reorder_quality(k, D, I, Q);
+            }
+        }
+    }
+}
+
 void IndexScalarQuantizer::boundary_search(
         idx_t n,
         const float* x,

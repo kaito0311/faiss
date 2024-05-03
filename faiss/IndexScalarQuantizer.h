@@ -67,6 +67,20 @@ struct IndexScalarQuantizer : IndexFlatCodes {
             idx_t* labels,
             const SearchParameters* params = nullptr) const override;
 
+    void boundary_search_with_quality(
+            idx_t n, 
+            const float* x, 
+            idx_t k, 
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const float lower_quality,
+            const float upper_quality, 
+            float* distances,
+            idx_t* labels,
+            float* out_quas,
+            const SearchParameters* params = nullptr) const override;
     void search_with_quality(
             idx_t n, 
             const float* x, 
