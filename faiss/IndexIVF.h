@@ -162,6 +162,44 @@ struct IndexIVFInterface : Level1Quantizer {
      *
      * @param n      nb of vectors to query
      * @param x      query vectors, size nx * d
+     * @param assign coarse quantization indices, size nx * nprobe
+     * @param centroid_dis
+     *               distances to coarse centroids, size nx * nprobe
+     * @param distance
+     *               output distances, size n * k
+     * @param labels output labels, size n * k
+     * @param store_pairs store inv list index + inv list offset
+     *                     instead in upper/lower 32 bit of result,
+     *                     instead of ids (used for reranking).
+     * @param params used to override the object's search parameters
+     * @param stats  search stats to be updated (can be null)
+     */
+    virtual void boundary_search_preassigned_with_quality(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const idx_t* assign,
+            const float* centroid_dis,
+            const float lower_quality, 
+            const float upper_quality,
+            float* distances,
+            idx_t* labels,
+            float* out_quas,
+            bool store_pairs,
+            const IVFSearchParameters* params = nullptr,
+            IndexIVFStats* stats = nullptr) const = 0;
+
+    /** search a set of vectors, that are pre-quantized by the IVF
+     *  quantizer. Fill in the corresponding heaps with the query
+     *  results. The default implementation uses InvertedListScanners
+     *  to do the search.
+     *
+     * @param n      nb of vectors to query
+     * @param x      query vectors, size nx * d
      * @param lower      lower value for distance
      * @param upper      upper value for distance
      * @param assign coarse quantization indices, size nx * nprobe
@@ -431,6 +469,7 @@ struct IndexIVF : Index, IndexIVFInterface {
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const override;
+
     void search_preassigned_with_quality(
             idx_t n,
             const float* x,
@@ -445,6 +484,26 @@ struct IndexIVF : Index, IndexIVFInterface {
             bool store_pairs,
             const IVFSearchParameters* params = nullptr,
             IndexIVFStats* stats = nullptr) const override;
+
+    void boundary_search_preassigned_with_quality(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const idx_t* assign, // number of ID cluster
+            const float* centroid_dis,
+            const float lower_quality, 
+            const float upper_quality,
+            float* distances,
+            idx_t* labels,
+            float* out_quas,
+            bool store_pairs,
+            const IVFSearchParameters* params = nullptr,
+            IndexIVFStats* stats = nullptr) const override;
+
     void range_search_preassigned(
             idx_t nx,
             const float* x,
@@ -477,6 +536,21 @@ struct IndexIVF : Index, IndexIVFInterface {
             float* distances,
             idx_t* labels,
             const SearchParameters* params = nullptr) const;
+
+    void boundary_search_with_quality(
+            idx_t n,
+            const float* x, 
+            idx_t k, 
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const float lower_quality, 
+            const float upper_quality, 
+            float* distances, 
+            idx_t* labels, 
+            float* out_quas,
+            const SearchParameters* params = nullptr) const override;
 
     void range_search(
             idx_t n,
@@ -747,6 +821,7 @@ struct InvertedListScanner {
             float* distances, 
             idx_t* labels,
             size_t k) const; 
+
     virtual size_t scan_codes_with_quality(
             size_t n, 
             const uint8_t* codes, 
@@ -758,7 +833,36 @@ struct InvertedListScanner {
             idx_t* labels,
             float* out_quas,
             size_t k) const; 
+
+    virtual size_t scan_codes_boundary_with_quality(
+            size_t n, 
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const uint8_t* codes, 
+            const idx_t* ids, 
+            const uint8_t* qualities, 
+            const float lower_quality, 
+            const float upper_quality, 
+            float* distances, 
+            idx_t* labels,
+            float* out_quas,
+            size_t k) const; 
     
+    // same as scan_codes, using an iterator with quality. TODO: It's seem never call -> check it
+    virtual size_t iterate_codes_boundary_with_quality(
+            InvertedListsIterator* iterator,
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            float* distances,
+            idx_t* labels,
+            float* out_quas,
+            size_t k,
+            size_t& list_size) const;
+
     // same as scan_codes, using an iterator with quality. TODO: It's seem never call -> check it
     virtual size_t iterate_codes_with_quality(
             InvertedListsIterator* iterator,

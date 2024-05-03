@@ -58,6 +58,21 @@ struct IndexIDMapTemplate : IndexT {
             idx_t* labels,
             const SearchParameters* params = nullptr) const override;
 
+    void boundary_search_with_quality(
+            idx_t n,
+            const component_t* x,
+            idx_t k,
+            const distance_t lower,
+            const distance_t upper,
+            const distance_t duplicate_thr,
+            const bool rm_duplicate,
+            const distance_t lower_quality,
+            const distance_t upper_quality,
+            distance_t* distances,
+            idx_t* labels,
+            distance_t* out_quas,
+            const SearchParameters* params = nullptr) const override;
+        
     void search_with_quality(
             idx_t n,
             const component_t* x,
