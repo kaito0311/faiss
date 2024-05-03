@@ -172,6 +172,39 @@ struct Index {
             float* distances,
             idx_t* labels,
             const SearchParameters* params = nullptr) const;
+    
+    /** query n vectors of dimension d to the index.
+     *
+     * return at most k vectors. If there are not enough results for a
+     * query, the result array is padded with -1s.
+     *
+     * @param n                 number of vectors
+     * @param x                 input vectors to search, size n * d
+     * @param k                 number of extracted vectors
+     * @param lower             lower value of distances
+     * @param upper             higher value of distances
+     * @param rm_duplicate      remove duplicate by distance
+     * @param lower_quality     lower bound score quality, float
+     * @param upper_quality     upper bound score quality, float
+     * @param distances         output pairwise distances, size n*k
+     * @param labels            output labels of the NNs, size n*k
+     * @param out_quas          output qualities of the NNs, size n*k
+     */
+    
+    virtual void boundary_search_with_quality(
+            idx_t n,
+            const float* x,
+            idx_t k,
+            const float lower,
+            const float upper,
+            const float duplicate_thr,
+            const bool rm_duplicate,
+            const float lower_quality, 
+            const float upper_quality,
+            float* distances,
+            idx_t* labels,
+            float* out_quas,
+            const SearchParameters* params = nullptr) const;
 
     /** query n vectors of dimension d to the index.
      *
@@ -215,6 +248,7 @@ struct Index {
             float* distances,
             idx_t* labels,
             const SearchParameters* params = nullptr) const; 
+
     virtual void search_with_quality(
             idx_t n,
             const float* x,

@@ -84,6 +84,44 @@ void IndexFlat::boundary_search(
     }
 }
 
+void IndexFlat::boundary_search_with_quality(
+        idx_t n, 
+        const float* x, 
+        idx_t k, 
+        const float lower,
+        const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
+        const float lower_quality,
+        const float upper_quality,
+        float* distances,
+        idx_t* labels,
+        float* out_quas,
+        const SearchParameters* params) const {
+    IDSelector* sel = params ? params->sel : nullptr;
+    FAISS_THROW_IF_NOT(k > 0);
+
+    FAISS_THROW_IF_NOT(include_quality == true);
+    FAISS_THROW_IF_NOT(int(ntotal * qua_size) == qualities.size()); /// Check size of quality
+
+
+    // we see the distances and labels as heaps
+    if (metric_type == METRIC_INNER_PRODUCT){
+        float_minheap_quality_array_t res = {size_t(n), size_t(k), labels, distances, out_quas};
+        knn_inner_product_boundary_with_quality(x, get_xb(), lower, upper, duplicate_thr, rm_duplicate, lower_quality, upper_quality, get_qualities(), d, n, ntotal, &res, sel);
+    } else if (metric_type == METRIC_L2) {
+        float_maxheap_quality_array_t res = {size_t(n), size_t(k), labels, distances, out_quas};
+        knn_L2sqr_boundary_with_quality(x, get_xb(), lower, upper, duplicate_thr, rm_duplicate, lower_quality, upper_quality, get_qualities(), d, n, ntotal, &res, nullptr, sel);
+        // knn_L2sqr_boundary(x, get_xb(), lower, upper, duplicate_thr, rm_duplicate, d, n, ntotal, &res, nullptr, sel);
+        // FAISS_THROW_MSG("metric type not supported");
+    } else if (is_similarity_metric(metric_type)) {
+        FAISS_THROW_MSG("metric type not supported");
+    }
+    else {
+        FAISS_THROW_MSG("metric type not supported");
+    }
+}
+
 void IndexFlat::range_search(
         idx_t n,
         const float* x,

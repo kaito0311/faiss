@@ -49,6 +49,23 @@ void IndexBinary::boundary_search(
     FAISS_THROW_MSG("boundary search not implemented");
 }
 
+void IndexBinary::boundary_search_with_quality(
+        idx_t,
+        const uint8_t* ,
+        idx_t,
+        const int32_t,
+        const int32_t,
+        const int32_t,
+        const bool,
+        const int32_t, 
+        const int32_t,
+        int32_t*,
+        idx_t*,
+        int32_t*,
+        const SearchParameters* params) const {
+    FAISS_THROW_MSG("boundar seach with quality not implemented");
+}
+
 void IndexBinary::search_with_quality(
         idx_t,
         const uint8_t*,

@@ -47,6 +47,23 @@ void Index::boundary_search(
     FAISS_THROW_MSG("boundary search not implemented");
 }
 
+void Index::boundary_search_with_quality(
+        idx_t,
+        const float* ,
+        idx_t,
+        const float,
+        const float,
+        const float,
+        const bool,
+        const float, 
+        const float,
+        float*,
+        idx_t*,
+        float*,
+        const SearchParameters* params) const {
+    FAISS_THROW_MSG("boundar seach with quality not implemented");
+}
+
 void Index::search_with_quality(
         idx_t, /*n*/
         const float*, /*x*/

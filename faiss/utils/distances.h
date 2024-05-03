@@ -326,6 +326,22 @@ void knn_inner_product_quality(
         float_minheap_quality_array_t* res,
         const IDSelector* sel = nullptr);
 
+void knn_inner_product_boundary_with_quality(
+        const float* x, 
+        const float* y,
+        const float lower,
+        const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
+        const float lower_quality, 
+        const float upper_quality,
+        const float* qualities,
+        size_t d,
+        size_t nx, 
+        size_t ny,
+        float_minheap_quality_array_t* res,
+        const IDSelector* sel = nullptr);
+
 /**  Return the k nearest neighors of each of the nx vectors x among the ny
  *  vector y, for the inner product metric.
  *
@@ -358,6 +374,25 @@ void knn_inner_product_boundary(
         size_t k,
         float* distances,
         int64_t* indexes,
+        const IDSelector* sel = nullptr);
+
+void knn_inner_product_boundary_with_quality(
+        const float* x, 
+        const float* y,
+        const float lower,
+        const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
+        const float lower_quality, 
+        const float upper_quality,
+        const float* qualities_array,
+        size_t d,
+        size_t nx, 
+        size_t ny,
+        size_t k,
+        float* distances,
+        int64_t* indexes,
+        float* quas,
         const IDSelector* sel = nullptr);
 
 void knn_inner_product_quality(
@@ -403,6 +438,23 @@ void knn_L2sqr_boundary(
         size_t nx,
         size_t ny,
         float_maxheap_array_t* res,
+        const float* y_norm2 = nullptr,
+        const IDSelector* sel = nullptr);
+
+void knn_L2sqr_boundary_with_quality(
+        const float* x, 
+        const float* y, 
+        const float lower,
+        const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
+        const float lower_quality, 
+        const float upper_quality,
+        const float* qualities, 
+        size_t d, 
+        size_t nx, 
+        size_t ny, 
+        float_maxheap_quality_array_t* res, 
         const float* y_norm2 = nullptr,
         const IDSelector* sel = nullptr);
 

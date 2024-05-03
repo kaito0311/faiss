@@ -134,6 +134,37 @@ struct HeapResultHandler {
     }
 
     /// add results for query i0..i1 and j0..j1
+    void add_results_boundary_with_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, 
+                                                const bool rm_duplicate, const T lower_quality, const T upper_quality, const T* qualities) {
+    #pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            T* heap_dis = heap_dis_tab + i * k;
+            TI* heap_ids = heap_ids_tab + i * k;
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+
+            T thresh = heap_dis[0];
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    T dis = dis_tab_i[j];
+                    bool keep = true;
+                    if (dis < lower){
+                        keep = false;
+                    };
+                    if (dis > upper){
+                        keep = false;
+                    };
+
+                    if (C::cmp(thresh, dis) && keep) {
+                            heap_replace_top<C>(k, heap_dis, heap_ids, dis, j);
+                            thresh = heap_dis[0];
+                    }
+                }
+            }
+        }
+    }
+
+    /// add results for query i0..i1 and j0..j1
     void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
     #pragma omp parallel for
         for (int64_t i = i0; i < i1; i++) {
@@ -286,6 +317,40 @@ struct HeapResultHandlerQuality {
             }
         }
     }
+
+    /// add results for query i0..i1 and j0..j1
+    void add_results_boundary_with_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate,
+                                 const T lower_quality, const T upper_quality, const T* qualities) {
+    #pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            T* heap_dis = heap_dis_tab + i * k;
+            TI* heap_ids = heap_ids_tab + i * k;
+            T* heap_qua = heap_qua_tab + i * k; 
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+
+            T thresh = heap_dis[0];
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    T dis = dis_tab_i[j];
+
+                    bool keep = true;
+                    if (dis < lower){
+                        keep = false;
+                    };
+                    if (dis > upper){
+                        keep = false;
+                    };
+
+                    if (C::cmp(thresh, dis) && keep) {
+                            heap_replace_top_quality<C>(k, heap_dis, heap_ids, heap_qua, dis, j, curr_quality_score);
+                            thresh = heap_dis[0];
+                    }
+                }
+            }
+        }
+    }
+
 
     /// add results for query i0..i1 and j0..j1
     void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
@@ -608,6 +673,34 @@ struct ReservoirResultHandlerQuality {
         }
     }
     /// add results for query i0..i1 and j0..j1
+    void add_results_boundary_with_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate, const T lower_quality, const T upper_quality, const T* qualities) {
+        // maybe parallel for
+#pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            ReservoirTopNQuality<C>& reservoir = reservoirs[i - i0];
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+
+                    T dis = dis_tab_i[j];
+                    bool keep = true;
+                    if (dis < lower){
+                        keep = false;
+                    };
+                    if (dis > upper){
+                        keep = false;
+                    };
+                    
+                    if (keep) {
+                        reservoir.add(dis, j, curr_quality_score);
+                    }
+                }
+            }
+        }
+    }
+
+    /// add results for query i0..i1 and j0..j1
     void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
         // maybe parallel for
 #pragma omp parallel for
@@ -774,6 +867,31 @@ struct ReservoirResultHandler {
                 if (keep){
                     reservoir.add(dis, j);
                 };
+            }
+        }
+    }
+    /// add results for query i0..i1 and j0..j1
+    void add_results_boundary_with_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate, const T lower_quality, const T upper_quality, const T* qualities) {
+        // maybe parallel for
+#pragma omp parallel for
+        for (int64_t i = i0; i < i1; i++) {
+            ReservoirTopN<C>& reservoir = reservoirs[i - i0];
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    T dis = dis_tab_i[j];
+                    bool keep = true;
+                    if (dis < lower){
+                        keep = false;
+                    };
+                    if (dis > upper){
+                        keep = false;
+                    };
+                    if (keep){
+                        reservoir.add(dis, j);
+                    };
+                }
             }
         }
     }
@@ -1077,6 +1195,35 @@ struct SingleBestResultHandler {
         }
     }
 
+    void add_results_boundary_with_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const T lower_quality, const T upper_quality, const T* qualities) {
+        for (int64_t i = i0; i < i1; i++) {
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+
+            auto& min_distance = this->dis_tab[i];
+            auto& min_index = this->ids_tab[i];
+
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    const T distance = dis_tab_i[j];
+                    
+                    bool keep = true;
+                    if (distance < lower){
+                        keep = false;
+                    };
+                    if (distance > upper){
+                        keep = false;
+                    };
+
+                    if (C::cmp(min_distance, distance) && keep) {
+                        min_distance = distance;
+                        min_index = j;
+                    }
+                }
+            }
+        }
+    }
+
     void add_results_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower_quality, const T upper_quality, const T* qualities) {
         for (int64_t i = i0; i < i1; i++) {
             const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
@@ -1254,6 +1401,37 @@ struct SingleBestResultHandlerQuality {
                     min_distance = distance;
                     min_index = j;
                     min_quality = quality;
+                }
+            }
+        }
+    }
+
+    void add_results_boundary_with_quality_blas(size_t j0, size_t j1, const T* dis_tab, const T lower, const T upper, const T duplicate_thr, const bool rm_duplicate, const T lower_quality, const T upper_quality, const T* qualities) {
+        for (int64_t i = i0; i < i1; i++) {
+            const T* dis_tab_i = dis_tab + (j1 - j0) * (i - i0) - j0;
+
+            auto& min_distance = this->dis_tab[i];
+            auto& min_index = this->ids_tab[i];
+            auto& min_quality = this->dis_tab[i];
+
+            for (size_t j = j0; j < j1; j++) {
+                const T curr_quality_score = qualities[j];
+                if (curr_quality_score >= lower_quality && curr_quality_score <= upper_quality) {
+                    const T distance = dis_tab_i[j];
+                    
+                    bool keep = true;
+                    if (distance < lower){
+                        keep = false;
+                    };
+                    if (distance > upper){
+                        keep = false;
+                    };
+                    
+                    if (C::cmp(min_distance, distance) && keep) {
+                        min_distance = distance;
+                        min_index = j;
+                        min_quality = curr_quality_score;
+                    }
                 }
             }
         }

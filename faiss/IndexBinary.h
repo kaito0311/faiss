@@ -113,6 +113,21 @@ struct IndexBinary {
             idx_t* labels,
             const SearchParameters* params = nullptr) const;
 
+    virtual void boundary_search_with_quality(
+            idx_t n,
+            const uint8_t* x,
+            idx_t k,
+            const int32_t lower,
+            const int32_t upper,
+            const int32_t duplicate_thr,
+            const bool rm_duplicate,
+            const int32_t lower_quality, 
+            const int32_t upper_quality,
+            int32_t* distances,
+            idx_t* labels,
+            int32_t* out_quas,
+            const SearchParameters* params = nullptr) const;
+
     /** Query n vectors of dimension d to the index.
      *
      * return all vectors with distance < radius. Note that many indexes
