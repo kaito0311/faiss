@@ -15,7 +15,7 @@ r_qua = np.random.rand(nb, 1).astype(np.float32)
 ids = np.array(range(nb))
 
 nlist = 16
-k = 100
+k = 10
 
 
 
@@ -357,10 +357,19 @@ def test_boundary_search_with_quality():
     print("Train")
     index_flat_w_qua.train(xb)
     print("Add")
-    index_flat_w_qua.add_with_ids_with_quality(xb, r_qua)
+    index_flat_w_qua.add_with_quality(xb, r_qua)
     print("Seach")
-    D1, I1, Q1 = index_wo_qua.boundary_search_with_quality(xb[:10], k, lower = 0.0, upper = 100.0, rm_duplicate = False, lower_quality = 0,  upper_quality = 1.0)
+    D1, I1, Q1 = index_flat_w_qua.boundary_search_with_quality(xb[:10], k, lower = 80.0, upper = 100.0, rm_duplicate = False, lower_quality = 0.5,  upper_quality = 1.0)
+    D2, I2 = index_flat_w_qua.search(xb[:10], k)
 
+    print(D1) 
+    # print(I1)
+    print(Q1)
+
+    # print(np.sum(D1 - D2))
+    # print(np.sum(I1 - I2))
+
+    
 
 
 if __name__ == "__main__":
