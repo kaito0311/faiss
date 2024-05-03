@@ -132,7 +132,7 @@ int main() {
         printf("I=\n");
         for (int i = nq - 5; i < nq; i++) {
             for (int j = 0; j < k; j++)
-                printf("%5zd %f ", I[i * k + j], r_qua[(I[i*k +j])%10000]);
+                printf("%5zd %f %5g", I[i * k + j], r_qua[(I[i*k +j])%10000], D[i * k + j]);
             printf("\n");
         }
 
@@ -148,6 +148,28 @@ int main() {
         // return 0; 
 
         index.search_with_quality(nq, xq, k, 0, 0.5, D, I, Q);
+
+        printf("I=\n");
+        for (int i = nq - 5; i < nq; i++) {
+            for (int j = 0; j < k; j++){
+                // index.reconstruct_qua(I[i * k + j], qua_reconstruct);
+                printf("%5zd %5g %5g", I[i * k + j], r_qua[(I[i*k +j])%10000],  Q[i * k + j]);
+            }
+            printf("\n");
+        }
+
+        index.boundary_search_with_quality(nq, xq, k, 10.0, 100.0, 0.000001, false, 0, 1.0, D, I, Q);
+
+        printf("I=\n");
+        for (int i = nq - 5; i < nq; i++) {
+            for (int j = 0; j < k; j++){
+                // index.reconstruct_qua(I[i * k + j], qua_reconstruct);
+                printf("%5zd %5g %5g", I[i * k + j], r_qua[(I[i*k +j])%10000],  D[i * k + j]);
+            }
+            printf("\n");
+        }
+
+        index.boundary_search(nq, xq, k, 0.0, 100.0, 0.000001, false, D, I);
 
         printf("I=\n");
         for (int i = nq - 5; i < nq; i++) {
