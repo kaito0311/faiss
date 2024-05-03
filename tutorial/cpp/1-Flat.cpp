@@ -129,7 +129,7 @@ int main() {
     }
     std::cout << std::endl;
 
-    int k = 1;
+    int k = 101;
 
     { // sanity check: search 5 first vectors of xb
         idx_t* I = new idx_t[k * 5];
@@ -171,6 +171,36 @@ int main() {
         float* Q = new float[k * 101];
 
         index.search_with_quality(5, xb, k, 0, 0.2, D, I, Q);
+
+        // print results
+        printf("I=\n");
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < k; j++){
+                printf("%5zd ", I[i * k + j]);
+                printf("%5g ", resconstruc_vector[(I[i * k + j])]);
+                printf("%5g ", Q[i * k + j]);
+            }
+                
+            printf("\n");
+        }
+
+        printf("D=\n");
+        for (int i = 0; i < 5; i++) {
+            for (int j = 0; j < k; j++)
+                printf("%7g ", D[i * k + j]);
+            printf("\n");
+        }
+
+        delete[] I;
+        delete[] D;
+    }
+
+    { // sanity check: search 5 first vectors of xb
+        idx_t* I = new idx_t[k * 101];
+        float* D = new float[k * 101];
+        float* Q = new float[k * 101];
+
+        index.boundary_search_with_quality(5, xb, k, 8.0, 100.0, 0.000001, false, 0, 0.2, D, I, Q);
 
         // print results
         printf("I=\n");

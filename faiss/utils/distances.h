@@ -546,6 +546,7 @@ void knn_inner_products_by_idx(
         float* vals,
         int64_t* ids,
         int64_t ld_ids = -1);
+
 void knn_inner_products_by_idx_boundary(
         const float* x,
         const float* y,
@@ -560,6 +561,26 @@ void knn_inner_products_by_idx_boundary(
         size_t k,
         float* vals,
         int64_t* ids,
+        int64_t ld_ids = -1);
+
+void knn_inner_products_by_idx_boundary_with_quality(
+        const float* x, 
+        const float* y, 
+        const float lower,
+        const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
+        const float lower_quality,
+        const float upper_quality,
+        const float* qualities,
+        const int64_t* ids, // selected ids
+        size_t d,
+        size_t nx, 
+        size_t ny, 
+        size_t k,
+        float* res_vals, // valu
+        int64_t* res_ids,
+        float* res_quas,
         int64_t ld_ids = -1);
 
 void knn_inner_products_by_idx_quality(
@@ -613,6 +634,26 @@ void knn_L2sqr_by_idx_boundary(
         size_t k,
         float* vals,
         int64_t* ids,
+        int64_t ld_subset = -1);
+
+void knn_L2sqr_by_idx_boundary_with_quality(
+        const float* x, 
+        const float* y,
+        const float lower,
+        const float upper,
+        const float duplicate_thr,
+        const bool rm_duplicate,
+        const float lower_quality, 
+        const float upper_quality, 
+        const float* qualities, 
+        const int64_t* subset,
+        size_t d,
+        size_t nx,
+        size_t nsubset,
+        size_t k,
+        float* vals,
+        int64_t* ids,
+        float* quas,
         int64_t ld_subset = -1);
 
 void knn_L2sqr_by_idx_quality(

@@ -1111,7 +1111,7 @@ void exhaustive_L2sqr_blas_boundary_with_quality(
         size_t ny,
         ResultHandler& res,
         const float* y_norms = nullptr) {
-    exhaustive_L2sqr_blas_boundary_with_quality_default_impl(x, y, lower_quality, upper_quality, qualities, d, nx, ny, res);
+    exhaustive_L2sqr_blas_boundary_with_quality_default_impl(x, y, lower, upper, duplicate_thr, rm_duplicate, lower_quality, upper_quality, qualities, d, nx, ny, res);
 }
 
 template <class ResultHandler>
