@@ -439,7 +439,8 @@ def handle_Index(the_class):
         else:
             assert I.shape == (n, k)
 
-        self.search_with_quality_c(n, swig_ptr(x), k, lower_quality, upper_quality, swig_ptr(D), swig_ptr(I), swig_ptr(Q), params)
+        self.search_with_quality_c(n, swig_ptr(x), k, float(lower_quality), float(upper_quality), 
+                                    swig_ptr(D), swig_ptr(I), swig_ptr(Q), params)
         return D, I, Q
 
     def replacement_boundary_search(self, x, k, lower, upper, *, params=None, D=None, I=None, rm_duplicate = False, duplicate_thr = 1e-6):
@@ -492,6 +493,64 @@ def handle_Index(the_class):
 
         self.boundary_search_c(n, swig_ptr(x), k, lower, upper, duplicate_thr, rm_duplicate, swig_ptr(D), swig_ptr(I), params)
         return D, I
+
+    def replacement_boundary_search_with_quality(self, x, k, lower, upper, *, params=None, D=None, I=None, Q = None,
+                                                rm_duplicate = False, duplicate_thr = 1e-6, lower_quality = 0.0, upper_quality = 1.0):
+        """Find the k nearest neighbors of the set of vectors x in the index.
+
+        Parameters
+        ----------
+        x : array_like
+            Query vectors, shape (n, d) where d is appropriate for the index.
+            `dtype` must be float32.
+        k : int
+            Number of nearest neighbors.
+        lower: lower boundary
+        upper: upper boundary
+        params : SearchParameters
+            Search parameters of the current search (overrides the class-level params)
+        D : array_like, optional
+            Distance array to store the result.
+        I : array_like, optional
+            Labels array to store the results.
+
+        Returns
+        -------
+        D : array_like
+            Distances of the nearest neighbors, shape (n, k). When not enough results are found
+            the label is set to +Inf or -Inf.
+        I : array_like
+            Labels of the nearest neighbors, shape (n, k).
+            When not enough results are found, the label is set to -1
+        """
+
+        n, d = x.shape
+        x = np.ascontiguousarray(x, dtype='float32')
+        assert d == self.d
+
+        assert k > 0
+
+        if rm_duplicate:
+            assert duplicate_thr > 0
+
+        if D is None:
+            D = np.empty((n, k), dtype=np.float32)
+        else:
+            assert D.shape == (n, k)
+
+        if I is None:
+            I = np.empty((n, k), dtype=np.int64)
+        else:
+            assert I.shape == (n, k)
+
+        if Q is None:
+            Q = np.empty((n, k), dtype=np.float32)
+        else:
+            assert Q.shape == (n, k)
+
+        self.boundary_search_with_quality_c(n, swig_ptr(x), k, lower, upper, duplicate_thr, rm_duplicate, float(lower_quality), float(upper_quality),
+                                             swig_ptr(D), swig_ptr(I), swig_ptr(Q), params)
+        return D, I, Q
 
     def replacement_search_and_reconstruct(self, x, k, *, params=None, D=None, I=None, R=None):
         """Find the k nearest neighbors of the set of vectors x in the index,
@@ -1073,6 +1132,7 @@ def handle_Index(the_class):
     replace_method(the_class, 'reconstruct_qua_n', replacement_reconstruct_qua_n)
     replace_method(the_class, 'range_search', replacement_range_search)
     replace_method(the_class, 'boundary_search', replacement_boundary_search)
+    replace_method(the_class, 'boundary_search_with_quality', replacement_boundary_search_with_quality)
     replace_method(the_class, 'update_vectors', replacement_update_vectors,
                    ignore_missing=True)
     replace_method(the_class, 'search_and_reconstruct',

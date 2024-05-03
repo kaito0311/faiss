@@ -349,6 +349,19 @@ def test_other():
     print(I)
     print(Q)
 
+def test_boundary_search_with_quality(): 
+
+    index_flat_w_qua = faiss.index_factory(d, "IVF16,Flat")
+    index_flat_w_qua.set_include_quality() 
+
+    print("Train")
+    index_flat_w_qua.train(xb)
+    print("Add")
+    index_flat_w_qua.add_with_ids_with_quality(xb, r_qua)
+    print("Seach")
+    D1, I1, Q1 = index_wo_qua.boundary_search_with_quality(xb[:10], k, lower = 0.0, upper = 100.0, rm_duplicate = False, lower_quality = 0,  upper_quality = 1.0)
+
+
 
 if __name__ == "__main__":
     # test_reconstruct_quality()
@@ -356,8 +369,8 @@ if __name__ == "__main__":
     # print("[INFO] Testing index flat L2: ")
     # test_index_flat()
 
-    print("[INFO] Testing index IVFFlatL2: ")
-    test_index_ivfflat()
+    # print("[INFO] Testing index IVFFlatL2: ")
+    # test_index_ivfflat()
 
     # print("[INFO] Testing index IVFFSQ ondisk: ")
     # test_index_ivfflat_ondisk_w_qua()
@@ -370,3 +383,7 @@ if __name__ == "__main__":
 
     # print("[INFO] Testing other")
     # test_other()
+
+    print("[INFO] Testing boundary search with quality")
+    test_boundary_search_with_quality() 
+
